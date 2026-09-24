@@ -5,12 +5,12 @@ help users understand whether their income, savings, pension assets (BPJS
 Ketenagakerjaan JHT, DPLK), living costs, inflation and future housing costs
 are enough to reach their retirement goals.
 
-**Current stage: 4 — Retirement Plan.** Building on the foundation (Stage 1),
-financial profile (Stage 2) and living-cost projections (Stage 3), a
-deterministic retirement simulation estimates the fund needed at retirement,
-the projected value of current assets, and the funding gap or surplus. The
-Retirement Plan page explains every step, and the dashboard shows real
-retirement readiness. Scenario comparison and AI features come in later stages.
+**Current stage: 5 — Scenario Planning.** On top of the foundation, financial
+profile, living-cost projections and retirement simulation (Stages 1–4), users
+can create, view, edit, duplicate and delete what-if scenarios. Scenarios
+override selected assumptions without changing the saved plan, and are compared
+side by side, with retirement trajectories, using the same retirement engine. AI
+features come in a later stage.
 
 ## Getting started
 
@@ -87,6 +87,7 @@ without changing the UI architecture.
 | `economic_assumptions` | Per-user inflation, housing-price growth and investment return in basis points (300 = 3.00%); no row = demo defaults 3% / 5% / 7% |
 | `target_properties`  | One target property per user: description, today's price, purchase age, optional growth rate (NULL = use the housing-growth assumption) |
 | `retirement_settings` | Per-user plan-until (life-expectancy) age, 50–120; no row = 85 |
+| `scenarios`          | Named what-if scenarios. Every override column is nullable, and NULL means "use the baseline": retirement age, monthly spending, inflation, return, retirement duration, property purchase (flag, price, age, growth) |
 | `schema_migrations`  | Applied migration ids                                    |
 
 Money is stored as integer Rupiah. Schema changes are added as new entries in
@@ -152,6 +153,30 @@ age *R*, plan-until age *L*, inflation *i* and expected return *r*:
 
 Results are estimates from these assumptions, not guaranteed outcomes.
 `retirement.test.ts` pins them to independently computed values.
+
+### Scenarios
+
+| Route                    | Purpose                                                    |
+| ------------------------ | ---------------------------------------------------------- |
+| `/scenarios`             | Side-by-side comparison, trajectories chart, manage list   |
+| `/scenarios/new`         | Create a scenario (blank fields inherit the baseline)      |
+| `/scenarios/[id]`        | Scenario vs your plan, result, and apply-to-plan           |
+| `/scenarios/[id]/edit`   | Edit and recalculate                                       |
+
+- **One engine.** `resolveScenario()` (`src/lib/scenarios/resolve.ts`) only
+  substitutes a scenario's overrides into the baseline input that the
+  Retirement Plan builds. Results then come from the same
+  `simulateRetirement()`. The engine takes an optional property purchase,
+  paid from assets at the purchase age, so housing can be compared. Without a
+  purchase, results are identical to Stage 4.
+- **Isolation.** Scenario operations only read the baseline tables.
+  `applyScenarioToBaseline()` is the only write path. It copies only the
+  values the user ticks, after an explicit confirmation. A unit test
+  snapshots every baseline table before and after creating, editing,
+  duplicating, deleting and comparing scenarios.
+- **Examples.** Base, Conservative and Optimistic are assumption sets, not
+  forecasts. The demo user also gets a home-purchase scenario, and other users
+  can add the examples from the empty state.
 
 ### Deploying to Vercel
 
