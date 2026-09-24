@@ -129,7 +129,8 @@ function Comparison({ comparison }: { comparison: Extract<ReturnType<typeof comp
         </h2>
         <p className="mt-1 mb-4 text-sm text-muted">
           Projected asset balance at each age: growing until retirement, then drawn down to pay living costs. A line
-          reaching Rp 0 means the money runs out at that age. Plans with a calculation error are left out.
+          reaching Rp 0 means the money runs out at that age. Plans with identical assumptions (such as Base and your
+          current plan) overlap, and plans with a calculation error are left out.
         </p>
         <TrajectoryChart plans={plans} />
       </section>
