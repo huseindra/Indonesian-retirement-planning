@@ -6,13 +6,16 @@ export function SummaryCard({
   detail,
   icon,
   placeholder = false,
+  placeholderLabel = "Coming soon",
 }: {
   label: string;
   value: React.ReactNode;
   detail?: React.ReactNode;
   icon: IconName;
-  /** Renders the card as not-yet-available (dashed border, "Soon" badge). */
+  /** Renders the card as not-yet-available (dashed border and a badge). */
   placeholder?: boolean;
+  /** Badge text for placeholder cards, e.g. "Coming soon" or "Not set". */
+  placeholderLabel?: string;
 }) {
   return (
     <article
@@ -41,7 +44,7 @@ export function SummaryCard({
       {detail ? <p className="mt-1.5 text-xs text-muted sm:text-sm">{detail}</p> : null}
       {placeholder ? (
         <span className="mt-3 inline-flex w-fit rounded-full bg-canvas px-2 py-0.5 text-[11px] font-medium text-muted ring-1 ring-line">
-          Coming soon
+          {placeholderLabel}
         </span>
       ) : null}
     </article>

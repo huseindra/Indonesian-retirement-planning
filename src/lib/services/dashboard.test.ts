@@ -3,6 +3,7 @@ import { openDatabase, type Database } from "../db/client";
 import { DEMO_USERNAME } from "../db/seed";
 import { findUserByUsername } from "../repositories/users";
 import { getDashboardSummary } from "./dashboard";
+import { deleteFinancialData, saveFinancialProfile } from "./financial-profile";
 
 describe("getDashboardSummary", () => {
   let db: Database;
@@ -17,31 +18,50 @@ describe("getDashboardSummary", () => {
     db.close();
   });
 
-  it("derives age and years to retirement from the stored profile", () => {
-    const summary = getDashboardSummary(userId, new Date(2026, 8, 24), db);
-    expect(summary.profile).toMatchObject({
+  it("uses the persisted profile for ages and years to retirement", () => {
+    expect(getDashboardSummary(userId, db).profile).toMatchObject({
       currentAge: 35,
       targetRetirementAge: 58,
       yearsToRetirement: 23,
+      housingStatus: "rent",
+      monthlyRent: 4_500_000,
     });
   });
 
   it("splits savings from pension assets", () => {
-    const summary = getDashboardSummary(userId, new Date(2026, 8, 24), db);
-    const total = summary.savings.accounts.reduce((sum, a) => sum + a.balance, 0);
+    const { savings } = getDashboardSummary(userId, db);
+    expect(savings.currentSavings).toBe(469_750_000);
+    expect(savings.pensionAssets).toBe(137_300_000);
+    expect(savings.accountCount).toBe(7);
+  });
 
-    expect(summary.savings.currentSavings).toBe(469_750_000);
-    expect(summary.savings.pensionAssets).toBe(137_300_000);
-    expect(summary.savings.currentSavings + summary.savings.pensionAssets).toBe(total);
+  it("reflects profile edits immediately", () => {
+    saveFinancialProfile(
+      userId,
+      {
+        currentAge: "40",
+        targetRetirementAge: "60",
+        monthlyIncome: "30000000",
+        monthlyExpenses: "12000000",
+        housingStatus: "family",
+      },
+      db,
+    );
+    expect(getDashboardSummary(userId, db).profile).toMatchObject({
+      currentAge: 40,
+      yearsToRetirement: 20,
+      monthlyRent: null,
+    });
   });
 
   it("leaves the estimated retirement fund uncalculated", () => {
-    expect(getDashboardSummary(userId, new Date(), db).estimatedRetirementFund).toBeNull();
+    expect(getDashboardSummary(userId, db).estimatedRetirementFund).toBeNull();
   });
 
-  it("returns empty data for a user without a profile", () => {
-    const summary = getDashboardSummary(9999, new Date(), db);
+  it("returns an empty summary once the profile is deleted", () => {
+    deleteFinancialData(userId, db);
+    const summary = getDashboardSummary(userId, db);
     expect(summary.profile).toBeNull();
-    expect(summary.savings).toEqual({ currentSavings: 0, pensionAssets: 0, accounts: [] });
+    expect(summary.savings).toMatchObject({ currentSavings: 0, pensionAssets: 0, accountCount: 0 });
   });
 });

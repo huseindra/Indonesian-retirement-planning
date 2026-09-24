@@ -1,26 +1,26 @@
 import { getDb, type Database } from "../db/client";
-import { calculateAge } from "../domain/age";
-import {
-  listAssetAccountsByUserId,
-  type AssetAccount,
-} from "../repositories/asset-accounts";
-import { findFinancialProfileByUserId } from "../repositories/financial-profiles";
+import type { HousingStatus } from "../domain/financial-profile";
+import { getFinancialOverview, type AssetGroupSummary } from "./financial-profile";
 
 export interface DashboardSummary {
+  /** Null until the user has completed their financial profile. */
   profile: {
     currentAge: number;
     targetRetirementAge: number;
     yearsToRetirement: number;
-    city: string;
     monthlyIncome: number;
     monthlyExpenses: number;
+    housingStatus: HousingStatus;
+    monthlyRent: number | null;
+    propertyValue: number | null;
   } | null;
   savings: {
-    /** Sum of non-pension assets (cash, deposits, investments). */
+    /** Cash & savings plus investments. */
     currentSavings: number;
-    /** Sum of pension assets (BPJS JHT, DPLK, …). */
+    /** BPJS JHT plus other pension funds. */
     pensionAssets: number;
-    accounts: AssetAccount[];
+    accountCount: number;
+    groups: AssetGroupSummary[];
   };
   /**
    * Not calculated until the retirement simulation exists. Kept in the
@@ -30,40 +30,32 @@ export interface DashboardSummary {
 }
 
 /**
- * Assembles everything the dashboard shows for a user. This is plain
- * aggregation of stored data — no projections or retirement maths.
+ * Assembles everything the dashboard shows for a user from their persisted
+ * financial profile. This is plain aggregation — no projections.
  */
-export function getDashboardSummary(
-  userId: number,
-  today: Date = new Date(),
-  db: Database = getDb(),
-): DashboardSummary {
-  const profile = findFinancialProfileByUserId(userId, db);
-  const accounts = listAssetAccountsByUserId(userId, db);
-
-  let currentSavings = 0;
-  let pensionAssets = 0;
-  for (const account of accounts) {
-    if (account.category === "pension") pensionAssets += account.balance;
-    else currentSavings += account.balance;
-  }
-
-  let profileSummary: DashboardSummary["profile"] = null;
-  if (profile) {
-    const currentAge = calculateAge(profile.dateOfBirth, today);
-    profileSummary = {
-      currentAge,
-      targetRetirementAge: profile.targetRetirementAge,
-      yearsToRetirement: Math.max(profile.targetRetirementAge - currentAge, 0),
-      city: profile.city,
-      monthlyIncome: profile.monthlyIncome,
-      monthlyExpenses: profile.monthlyExpenses,
-    };
-  }
+export function getDashboardSummary(userId: number, db: Database = getDb()): DashboardSummary {
+  const overview = getFinancialOverview(userId, db);
+  const { profile } = overview;
 
   return {
-    profile: profileSummary,
-    savings: { currentSavings, pensionAssets, accounts },
+    profile: profile
+      ? {
+          currentAge: profile.currentAge,
+          targetRetirementAge: profile.targetRetirementAge,
+          yearsToRetirement: profile.targetRetirementAge - profile.currentAge,
+          monthlyIncome: profile.monthlyIncome,
+          monthlyExpenses: profile.monthlyExpenses,
+          housingStatus: profile.housingStatus,
+          monthlyRent: profile.monthlyRent,
+          propertyValue: profile.propertyValue,
+        }
+      : null,
+    savings: {
+      currentSavings: overview.totals.savings,
+      pensionAssets: overview.totals.pension,
+      accountCount: overview.accountCount,
+      groups: overview.groups,
+    },
     estimatedRetirementFund: null,
   };
 }

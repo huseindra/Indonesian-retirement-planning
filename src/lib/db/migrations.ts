@@ -59,9 +59,83 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_asset_accounts_user_id ON asset_accounts(user_id);
     `,
   },
+  {
+    id: 2,
+    name: "financial_profile_module",
+    // SQLite cannot alter column constraints in place, so both tables are
+    // rebuilt with the documented copy-and-rename procedure. Existing rows
+    // are carried over; nothing references these tables by foreign key.
+    up: `
+      CREATE TABLE financial_profiles_v2 (
+        user_id               INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        current_age           INTEGER NOT NULL CHECK (current_age BETWEEN 18 AND 100),
+        target_retirement_age INTEGER NOT NULL CHECK (target_retirement_age BETWEEN 19 AND 100),
+        monthly_income        INTEGER NOT NULL CHECK (monthly_income >= 0),
+        -- Day-to-day living costs, excluding rent (captured separately).
+        monthly_expenses      INTEGER NOT NULL CHECK (monthly_expenses >= 0),
+        housing_status        TEXT    NOT NULL CHECK (housing_status IN ('own', 'rent', 'family')),
+        property_value        INTEGER CHECK (property_value IS NULL OR property_value >= 0),
+        monthly_rent          INTEGER CHECK (monthly_rent IS NULL OR monthly_rent >= 0),
+        city                  TEXT,
+        created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        CHECK (target_retirement_age > current_age),
+        CHECK (housing_status = 'own'  OR property_value IS NULL),
+        CHECK (housing_status = 'rent' OR monthly_rent IS NULL)
+      );
+
+      -- Age is derived from the stored date of birth at migration time.
+      -- Housing was not captured before, so existing profiles start as
+      -- 'family' (no amounts required) until the user updates them.
+      INSERT INTO financial_profiles_v2
+        (user_id, current_age, target_retirement_age, monthly_income, monthly_expenses,
+         housing_status, city, created_at, updated_at)
+      SELECT user_id,
+             MIN(MAX(age, 18), target_retirement_age - 1),
+             target_retirement_age, monthly_income, monthly_expenses,
+             'family', city, updated_at, updated_at
+        FROM (
+          SELECT *,
+                 CAST(strftime('%Y', 'now') AS INTEGER) - CAST(substr(date_of_birth, 1, 4) AS INTEGER)
+                   - (strftime('%m-%d', 'now') < substr(date_of_birth, 6, 5)) AS age
+            FROM financial_profiles
+        );
+
+      DROP TABLE financial_profiles;
+      ALTER TABLE financial_profiles_v2 RENAME TO financial_profiles;
+
+      CREATE TABLE asset_accounts_v2 (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name        TEXT    NOT NULL,
+        category    TEXT    NOT NULL CHECK (category IN
+                      ('cash', 'deposit', 'mutual_fund', 'stock', 'bond', 'other',
+                       'bpjs_jht', 'pension')),
+        institution TEXT,
+        balance     INTEGER NOT NULL CHECK (balance >= 0),
+        created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+
+      -- BPJS Ketenagakerjaan JHT balances were previously stored as generic
+      -- pensions; give them their own category.
+      INSERT INTO asset_accounts_v2
+        (id, user_id, name, category, institution, balance, created_at, updated_at)
+      SELECT id, user_id, name,
+             CASE WHEN category = 'pension'
+                   AND (institution LIKE '%BPJS%' OR name LIKE '%JHT%') THEN 'bpjs_jht'
+                  ELSE category END,
+             institution, balance, updated_at, updated_at
+        FROM asset_accounts;
+
+      DROP TABLE asset_accounts;
+      ALTER TABLE asset_accounts_v2 RENAME TO asset_accounts;
+      CREATE INDEX idx_asset_accounts_user_id ON asset_accounts(user_id);
+    `,
+  },
 ];
 
-export function runMigrations(db: Database): void {
+export function runMigrations(db: Database, pending: Migration[] = migrations): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       id         INTEGER PRIMARY KEY,
@@ -81,7 +155,7 @@ export function runMigrations(db: Database): void {
     record.run(migration.id, migration.name);
   });
 
-  for (const migration of migrations) {
+  for (const migration of pending) {
     if (!isApplied.get(migration.id)) {
       // IMMEDIATE takes the write lock before the re-check above.
       apply.immediate(migration);
