@@ -196,3 +196,52 @@ describe("helper formulas", () => {
     expect(annualSavingFor(100, 0, 4)).toBe(25);
   });
 });
+
+describe("simulateRetirement — property purchase", () => {
+  it("pays an affordable property from assets and reduces retirement assets", () => {
+    const r = simulateRetirement({
+      ...demo,
+      propertyPurchase: { currentPrice: 300_000_000, purchaseAge: 45, growthBps: 500 },
+    });
+    expect(r.property).toMatchObject({ paidFromAssets: 488_668_388, unfundedAmount: 0 });
+    expect(r.property!.projection.futurePrice).toBe(488_668_388);
+    expect(r.retirementAssets).toBe(1_700_123_582);
+    expect(r.gap).toBe(-2_370_422_521);
+    // Projected assets still describe today's assets grown without the purchase.
+    expect(r.projectedAssets.total).toBe(2_877_738_653);
+    // The trajectory drops at the purchase age.
+    expect(r.accumulation.find((p) => p.age === 44)!.projectedAssets).toBe(1_116_036_665);
+    expect(r.accumulation.find((p) => p.age === 45)!.projectedAssets).toBe(705_490_843);
+    expect(r.accumulation.at(-1)!.projectedAssets).toBe(1_700_123_582);
+  });
+
+  it("reports the part of the price assets cannot cover", () => {
+    const r = simulateRetirement({
+      ...demo,
+      propertyPurchase: { currentPrice: 1_500_000_000, purchaseAge: 40, growthBps: 500 },
+    });
+    expect(r.property).toMatchObject({ paidFromAssets: 851_419_028, unfundedAmount: 1_063_003_316 });
+    expect(r.retirementAssets).toBe(0);
+    expect(r.gap).toBe(-4_070_546_103);
+    expect(r.fundsRunOutAtAge).toBe(58);
+  });
+
+  it("leaves results unchanged when no purchase is planned", () => {
+    const withNull = simulateRetirement({ ...demo, propertyPurchase: null });
+    const without = simulateRetirement(demo);
+    expect(withNull.retirementAssets).toBe(without.projectedAssets.total);
+    expect(withNull.gap).toBe(without.gap);
+    expect(withNull.property).toBeNull();
+  });
+
+  it("rejects a purchase outside the working years", () => {
+    for (const purchaseAge of [34, 59]) {
+      expect(() =>
+        simulateRetirement({ ...demo, propertyPurchase: { currentPrice: 1, purchaseAge, growthBps: 0 } }),
+      ).toThrow(/between your current age \(35\) and retirement age \(58\)/);
+    }
+    expect(() =>
+      simulateRetirement({ ...demo, propertyPurchase: { currentPrice: 0, purchaseAge: 40, growthBps: 0 } }),
+    ).toThrow(RetirementInputError);
+  });
+});

@@ -1,4 +1,5 @@
 import { BPS_PER_UNIT, growthFactor } from "./compound";
+import { projectProperty, type PropertyProjection } from "./housing";
 import { projectLivingCost, type LivingCostProjection } from "./living-costs";
 
 /**
@@ -18,7 +19,11 @@ import { projectLivingCost, type LivingCostProjection } from "./living-costs";
  *      Σ_{k=0}^{D−1} E × (1+i)^k / (1+r)^k
  * 3. Projected assets: today's assets grown at the expected return until
  *    retirement. Future contributions are NOT included.
- * 4. Gap = projected assets − required fund (negative = shortfall).
+ * 4. Optional property purchase: at the purchase age the property's future
+ *    price (see projectProperty) is paid from assets; any part the assets
+ *    cannot cover is reported as unfunded (e.g. to be financed by a loan).
+ * 5. Gap = assets available at retirement − required fund
+ *    (negative = shortfall).
  */
 
 export interface RetirementAssets {
@@ -39,11 +44,31 @@ export interface RetirementInput {
   inflationBps: number;
   /** Expected annual return, used before and during retirement. */
   investmentReturnBps: number;
+  /** Optional home purchase paid from assets before retirement. */
+  propertyPurchase?: PropertyPurchaseInput | null;
+}
+
+export interface PropertyPurchaseInput {
+  /** Today's price, whole Rupiah. */
+  currentPrice: number;
+  /** Between the current age and the retirement age (inclusive). */
+  purchaseAge: number;
+  /** Annual property-price growth, basis points. */
+  growthBps: number;
+}
+
+export interface PropertyPurchaseResult {
+  /** The same projection the Living Costs page shows (nominal and today's money). */
+  projection: PropertyProjection;
+  /** Part of the future price paid from projected assets. */
+  paidFromAssets: number;
+  /** Part the assets could not cover (would need financing). */
+  unfundedAmount: number;
 }
 
 export interface AccumulationPoint {
   age: number;
-  /** Today's assets grown at the expected return. */
+  /** Assets at this age (after any property purchase), grown at the expected return. */
   projectedAssets: number;
   /** What would need to be invested at this age to reach the required fund by retirement. */
   requiredCapital: number;
@@ -69,9 +94,17 @@ export interface RetirementResult {
   currentAssets: RetirementAssets & { total: number };
   projectedAssets: RetirementAssets & { total: number };
   assetGrowthFactor: number;
-  /** Projected assets − required fund. Negative means a shortfall. */
+  /** Property purchase outcome, or null when no purchase is planned. */
+  property: PropertyPurchaseResult | null;
+  /**
+   * Assets available at retirement: projected assets, less any property
+   * purchase and the growth that money would have earned. Equals
+   * projectedAssets.total when no purchase is planned.
+   */
+  retirementAssets: number;
+  /** Retirement assets − required fund. Negative means a shortfall. */
   gap: number;
-  /** Projected assets ÷ required fund (1 = fully funded). */
+  /** Retirement assets ÷ required fund (1 = fully funded). */
   fundedRatio: number;
   status: "surplus" | "shortfall";
   /** Extra saving per month from today that would close the gap (0 when funded). */
@@ -116,6 +149,18 @@ function validate(input: RetirementInput): void {
   }
   if (input.investmentReturnBps <= -BPS_PER_UNIT || input.inflationBps <= -BPS_PER_UNIT) {
     throw new RetirementInputError("Rates must be greater than −100%.", "investmentReturnBps");
+  }
+  const property = input.propertyPurchase;
+  if (property) {
+    if (!Number.isInteger(property.purchaseAge) || property.purchaseAge < currentAge || property.purchaseAge > retirementAge) {
+      throw new RetirementInputError(
+        `The property purchase age (${property.purchaseAge}) must be between your current age (${currentAge}) and retirement age (${retirementAge}).`,
+        "propertyPurchase",
+      );
+    }
+    if (!(property.currentPrice > 0) || property.growthBps <= -BPS_PER_UNIT) {
+      throw new RetirementInputError("The property price must be more than Rp 0.", "propertyPurchase");
+    }
   }
 }
 
@@ -174,9 +219,31 @@ export function simulateRetirement(input: RetirementInput): RetirementResult {
   const currentAssets = { ...input.assets, total: rawTotal };
   const projectedAssets = scaleAssets(input.assets, assetGrowthFactor);
 
-  // 4. Gap or surplus.
-  const gap = projectedAssets.total - requiredFund;
-  const fundedRatio = requiredFund > 0 ? projectedAssets.total / requiredFund : 1;
+  // 4. Optional property purchase, paid from assets at the purchase age.
+  let property: PropertyPurchaseResult | null = null;
+  let balanceAtRetirement = rawTotal * assetGrowthFactor;
+  let assetsAt = (age: number) => rawTotal * growthFactor(investmentReturnBps, age - currentAge);
+  if (input.propertyPurchase) {
+    const { currentPrice, purchaseAge, growthBps } = input.propertyPurchase;
+    const projection = projectProperty({ currentPrice, currentAge, purchaseAge, growthBps, inflationBps });
+    const beforePurchase = assetsAt(purchaseAge);
+    const paid = Math.min(beforePurchase, projection.futurePrice);
+    const afterPurchase = beforePurchase - paid;
+    property = {
+      projection,
+      paidFromAssets: Math.round(paid),
+      unfundedAmount: Math.round(projection.futurePrice - paid),
+    };
+    balanceAtRetirement = afterPurchase * growthFactor(investmentReturnBps, retirementAge - purchaseAge);
+    const beforeFn = assetsAt;
+    assetsAt = (age: number) =>
+      age < purchaseAge ? beforeFn(age) : afterPurchase * growthFactor(investmentReturnBps, age - purchaseAge);
+  }
+  const retirementAssets = Math.round(balanceAtRetirement);
+
+  // 5. Gap or surplus.
+  const gap = retirementAssets - requiredFund;
+  const fundedRatio = requiredFund > 0 ? retirementAssets / requiredFund : 1;
   const monthlySavingToCloseGap =
     gap < 0 ? Math.round(annualSavingFor(-gap, investmentReturnBps, yearsToRetirement) / 12) : 0;
 
@@ -184,14 +251,14 @@ export function simulateRetirement(input: RetirementInput): RetirementResult {
   for (let n = 0; n <= yearsToRetirement; n++) {
     accumulation.push({
       age: currentAge + n,
-      projectedAssets: Math.round(rawTotal * growthFactor(investmentReturnBps, n)),
+      projectedAssets: Math.round(assetsAt(currentAge + n)),
       requiredCapital: Math.round(requiredFund / growthFactor(investmentReturnBps, yearsToRetirement - n)),
     });
   }
 
   // Retirement drawdown using the unrounded projected balance.
   const drawdown: DrawdownPoint[] = [];
-  let balance = rawTotal * assetGrowthFactor;
+  let balance = balanceAtRetirement;
   let fundsRunOutAtAge: number | null = null;
   const r = investmentReturnBps / BPS_PER_UNIT;
   for (let k = 0; k < retirementYears; k++) {
@@ -219,6 +286,8 @@ export function simulateRetirement(input: RetirementInput): RetirementResult {
     currentAssets,
     projectedAssets,
     assetGrowthFactor,
+    property,
+    retirementAssets,
     gap,
     fundedRatio,
     status: gap >= 0 ? "surplus" : "shortfall",
