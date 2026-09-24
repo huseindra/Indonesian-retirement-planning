@@ -5,14 +5,14 @@ help users understand whether their income, savings, pension assets (BPJS
 Ketenagakerjaan JHT, DPLK), living costs, inflation and future housing costs
 are enough to reach their retirement goals.
 
-**Current stage: 2 — Financial Profile.** On top of the Stage 1 foundation
-(login, SQLite persistence, responsive dashboard), users can create, view, edit
-and delete their financial profile: age and target retirement age, monthly
-income and living expenses, housing (own / rent / family-owned), and asset
-records grouped as cash & savings, investments, JHT (BPJS Ketenagakerjaan) and
-other pension funds. The dashboard reads this persisted data and guides users
-to complete their profile when none exists. Retirement projections, scenarios
-and AI features come in later stages.
+**Current stage: 3 — Living Costs & Future Costs.** On top of the foundation
+(Stage 1) and the financial profile (Stage 2), users can set economic
+assumptions (inflation, housing-price growth, investment return), see their
+monthly and annual living costs projected to retirement with compound
+inflation, and plan a target property whose future price is shown both as a
+nominal price tag and in today's money. Charts compare current and projected
+costs over time. Retirement simulation, scenarios and AI features come in later
+stages.
 
 ## Getting started
 
@@ -86,6 +86,8 @@ without changing the UI architecture.
 | `sessions`           | Login sessions keyed by a SHA-256 hash of the cookie token |
 | `financial_profiles` | One per user: current and target retirement age, monthly income, living expenses (excl. rent), housing status, property value (own) or monthly rent (rent), optional city |
 | `asset_accounts`     | Asset records: `cash`, `deposit` (cash & savings); `mutual_fund`, `stock`, `bond`, `other` (investments); `bpjs_jht` (JHT); `pension` (other pension funds) |
+| `economic_assumptions` | Per-user inflation, housing-price growth and investment return in basis points (300 = 3.00%); no row = demo defaults 3% / 5% / 7% |
+| `target_properties`  | One target property per user: description, today's price, purchase age, optional growth rate (NULL = use the housing-growth assumption) |
 | `schema_migrations`  | Applied migration ids                                    |
 
 Money is stored as integer Rupiah. Schema changes are added as new entries in
@@ -108,6 +110,29 @@ Validation lives in `src/lib/validation/financial-profile.ts` and runs on the
 server for every save; server actions return field errors with the submitted
 values. Services in `src/lib/services/financial-profile.ts` scope every read
 and write to the signed-in user.
+
+### Living costs & projections
+
+| Route                       | Purpose                                              |
+| --------------------------- | ---------------------------------------------------- |
+| `/living-costs`             | Assumptions, living-cost and housing projections     |
+| `/living-costs/assumptions` | Edit the three rates, or reset them to the defaults  |
+| `/living-costs/property`    | Create or edit the target property                   |
+
+All projections are deterministic functions in `src/lib/projection/` — no AI
+model is involved. Rates are integer basis points and amounts whole Rupiah,
+rounded only at the end:
+
+- **Living cost at retirement** = monthly living expenses ×
+  (1 + inflation)^(retirement age − current age); annual = 12 × monthly.
+- **Future property price** (nominal) = today's price ×
+  (1 + property growth)^(purchase age − current age).
+- **In today's money** = future amount ÷ (1 + inflation)^years. This shows the
+  falling purchasing power of money, which is separate from the property's
+  price rising; the page never describes rising prices as the asset losing value.
+
+`src/lib/projection/projection.test.ts` pins results to values computed
+independently with Python's `decimal` module.
 
 ### Authentication
 
