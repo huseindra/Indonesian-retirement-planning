@@ -242,13 +242,19 @@ function AssetGroupCard({ summary }: { summary: AssetGroupSummary }) {
           {accounts.map((account) => (
             <li key={account.id} className="flex items-center gap-2 py-3 pl-5 pr-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{account.name}</p>
-                <p className="truncate text-xs text-muted">
+                <p className="text-sm font-medium break-words sm:truncate">{account.name}</p>
+                <p className="text-xs text-muted sm:truncate">
                   {ASSET_CATEGORY_LABELS[account.category]}
                   {account.institution ? ` · ${account.institution}` : ""}
                 </p>
+                {/* On phones the balance sits under the name so names aren't truncated. */}
+                <p className="mt-1 text-sm font-semibold tabular-nums sm:hidden">
+                  {formatRupiah(account.balance)}
+                </p>
               </div>
-              <p className="shrink-0 text-sm font-semibold tabular-nums">{formatRupiah(account.balance)}</p>
+              <p className="hidden shrink-0 text-sm font-semibold tabular-nums sm:block">
+                {formatRupiah(account.balance)}
+              </p>
               <div className="flex shrink-0 items-center">
                 <Link
                   href={`/financial-profile/assets/${account.id}/edit`}
