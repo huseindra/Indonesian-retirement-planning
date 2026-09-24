@@ -25,7 +25,7 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow="Dashboard"
         title={`Selamat datang, ${firstName}`}
-        description="A snapshot of where you stand today, based on your financial profile. Projections will appear here as more planning tools are added."
+        description="Where you stand today and whether you are on track for retirement, based on your financial profile and assumptions."
       />
 
       {profile ? null : <CompleteProfilePrompt />}

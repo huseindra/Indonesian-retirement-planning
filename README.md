@@ -5,14 +5,12 @@ help users understand whether their income, savings, pension assets (BPJS
 Ketenagakerjaan JHT, DPLK), living costs, inflation and future housing costs
 are enough to reach their retirement goals.
 
-**Current stage: 3 — Living Costs & Future Costs.** On top of the foundation
-(Stage 1) and the financial profile (Stage 2), users can set economic
-assumptions (inflation, housing-price growth, investment return), see their
-monthly and annual living costs projected to retirement with compound
-inflation, and plan a target property whose future price is shown both as a
-nominal price tag and in today's money. Charts compare current and projected
-costs over time. Retirement simulation, scenarios and AI features come in later
-stages.
+**Current stage: 4 — Retirement Plan.** Building on the foundation (Stage 1),
+financial profile (Stage 2) and living-cost projections (Stage 3), a
+deterministic retirement simulation estimates the fund needed at retirement,
+the projected value of current assets, and the funding gap or surplus. The
+Retirement Plan page explains every step, and the dashboard shows real
+retirement readiness. Scenario comparison and AI features come in later stages.
 
 ## Getting started
 
@@ -88,6 +86,7 @@ without changing the UI architecture.
 | `asset_accounts`     | Asset records: `cash`, `deposit` (cash & savings); `mutual_fund`, `stock`, `bond`, `other` (investments); `bpjs_jht` (JHT); `pension` (other pension funds) |
 | `economic_assumptions` | Per-user inflation, housing-price growth and investment return in basis points (300 = 3.00%); no row = demo defaults 3% / 5% / 7% |
 | `target_properties`  | One target property per user: description, today's price, purchase age, optional growth rate (NULL = use the housing-growth assumption) |
+| `retirement_settings` | Per-user plan-until (life-expectancy) age, 50–120; no row = 85 |
 | `schema_migrations`  | Applied migration ids                                    |
 
 Money is stored as integer Rupiah. Schema changes are added as new entries in
@@ -133,6 +132,35 @@ rounded only at the end:
 
 `src/lib/projection/projection.test.ts` pins results to values computed
 independently with Python's `decimal` module.
+
+### Retirement simulation
+
+`simulateRetirement()` in `src/lib/projection/retirement.ts` is a pure function
+(plain numbers in and out, no database, UI or AI). The Retirement Plan page and
+the dashboard both call it through `src/lib/services/retirement-plan.ts`, and
+later scenario and AI features can reuse it. With current age *a*, retirement
+age *R*, plan-until age *L*, inflation *i* and expected return *r*:
+
+1. **Annual living cost at retirement** *E* = 12 × monthly expenses × (1 + i)^(R − a)
+2. **Required fund** = *E* × Σ_{k=0}^{L−R−1} ((1 + i) / (1 + r))^k, so each
+   year's cost is paid at the start of the year, rises with inflation, and the
+   rest keeps earning *r*
+3. **Projected assets** = (cash & savings + investments + JHT + other pensions)
+   × (1 + r)^(R − a), with no future contributions
+4. **Gap or surplus** = projected assets − required fund. The page also shows
+   the monthly saving that would close a gap and the age the money runs out.
+
+Results are estimates from these assumptions, not guaranteed outcomes.
+`retirement.test.ts` pins them to independently computed values.
+
+### Deploying to Vercel
+
+`vercel.json` sets the framework to Next.js. Vercel functions can only write
+under `/tmp`, so when `VERCEL` is set and `DATABASE_PATH` is not, the SQLite file
+is created at `/tmp/app.db` and seeded with the demo data on each cold start.
+That storage is **temporary**: changes are lost when an instance is recycled.
+For data that lasts, point `DATABASE_PATH` at durable storage or move to a hosted
+database.
 
 ### Authentication
 
