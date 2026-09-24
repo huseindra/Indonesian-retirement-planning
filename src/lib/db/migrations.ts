@@ -133,6 +133,34 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_asset_accounts_user_id ON asset_accounts(user_id);
     `,
   },
+  {
+    id: 3,
+    name: "cost_projection_module",
+    // Rates are integer basis points (300 = 3.00%). A user without an
+    // economic_assumptions row uses the application defaults.
+    up: `
+      CREATE TABLE economic_assumptions (
+        user_id               INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        inflation_bps         INTEGER NOT NULL CHECK (inflation_bps BETWEEN 0 AND 3000),
+        housing_growth_bps    INTEGER NOT NULL CHECK (housing_growth_bps BETWEEN -1000 AND 3000),
+        investment_return_bps INTEGER NOT NULL CHECK (investment_return_bps BETWEEN -1000 AND 3000),
+        created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+
+      -- One target property per user. growth_bps NULL means "use the
+      -- housing-price growth from economic_assumptions".
+      CREATE TABLE target_properties (
+        user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        name          TEXT    NOT NULL,
+        current_price INTEGER NOT NULL CHECK (current_price > 0),
+        purchase_age  INTEGER NOT NULL CHECK (purchase_age BETWEEN 18 AND 100),
+        growth_bps    INTEGER CHECK (growth_bps IS NULL OR growth_bps BETWEEN -1000 AND 3000),
+        created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database, pending: Migration[] = migrations): void {

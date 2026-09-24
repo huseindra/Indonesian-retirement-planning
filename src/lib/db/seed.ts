@@ -2,6 +2,8 @@ import type { Database } from "better-sqlite3";
 import { hashPassword } from "../auth/password";
 import type { AssetAccountInput } from "../repositories/asset-accounts";
 import type { FinancialProfileInput } from "../repositories/financial-profiles";
+import type { TargetPropertyInput } from "../repositories/target-properties";
+import { DEFAULT_ASSUMPTIONS } from "../domain/assumptions";
 
 export const DEMO_USERNAME = "demo";
 export const DEMO_PASSWORD = "demo123";
@@ -29,6 +31,13 @@ const DEMO_ASSETS: AssetAccountInput[] = [
   { name: "DPLK pension fund", category: "pension", institution: "DPLK provider", balance: 45_000_000 },
 ];
 
+const DEMO_TARGET_PROPERTY: TargetPropertyInput = {
+  name: "3-bedroom landed house in Tangerang Selatan",
+  currentPrice: 1_500_000_000,
+  purchaseAge: 40,
+  growthBps: null, // follows the housing-growth assumption
+};
+
 /**
  * Users without a financial profile, used by browser tests so they can
  * create and delete data without touching the demo account. Only seeded
@@ -49,7 +58,8 @@ function userExists(db: Database, username: string): boolean {
 }
 
 /**
- * Seeds the demo user with a financial profile and asset accounts. Skipped
+ * Seeds the demo user with a financial profile, asset accounts, economic
+ * assumptions and a target property. Skipped
  * when the demo user already exists, so it never overwrites data the user
  * has changed.
  */
@@ -71,6 +81,16 @@ export function seedDemoData(db: Database): void {
          VALUES (@userId, @name, @category, @institution, @balance)`,
       );
       for (const asset of DEMO_ASSETS) insertAsset.run({ userId, ...asset });
+
+      db.prepare(
+        `INSERT INTO economic_assumptions (user_id, inflation_bps, housing_growth_bps, investment_return_bps)
+         VALUES (@userId, @inflationBps, @housingGrowthBps, @investmentReturnBps)`,
+      ).run({ userId, ...DEFAULT_ASSUMPTIONS });
+
+      db.prepare(
+        `INSERT INTO target_properties (user_id, name, current_price, purchase_age, growth_bps)
+         VALUES (@userId, @name, @currentPrice, @purchaseAge, @growthBps)`,
+      ).run({ userId, ...DEMO_TARGET_PROPERTY });
     }
 
     if (process.env.SEED_E2E_USERS === "1") {
