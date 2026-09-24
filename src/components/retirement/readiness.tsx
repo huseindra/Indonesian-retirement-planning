@@ -39,7 +39,7 @@ export function ReadinessSummary({ result, compact = false }: { result: Retireme
             {formatPercent(result.fundedRatio)} funded
           </span>
           <span className="text-muted">
-            {formatRupiahCompact(result.projectedAssets.total)} of {formatRupiahCompact(result.requiredFund)} needed
+            {formatRupiahCompact(result.retirementAssets)} of {formatRupiahCompact(result.requiredFund)} needed
           </span>
         </div>
         <div
@@ -76,7 +76,7 @@ export function RetirementChart({ result }: { result: RetirementResult }) {
   return (
     <LineChart
       description={`Projected assets grow from ${formatRupiah(points[0].projectedAssets)} to ${formatRupiah(
-        result.projectedAssets.total,
+        result.retirementAssets,
       )} by age ${result.input.retirementAge}, against ${formatRupiah(result.requiredFund)} needed.`}
       x={points.map((p) => p.age)}
       xLabels={ageLabels(points.map((p) => p.age))}

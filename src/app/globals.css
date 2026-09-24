@@ -22,6 +22,17 @@
   /* Chart series (validated for CVD separation and 3:1 contrast on white). */
   --color-series-1: #0b8467;
   --color-series-2: #d97706;
+
+  /* Categorical palette for comparing up to 8 plans (validated for CVD
+     separation; lighter hues rely on the legend and data table). */
+  --color-cat-1: #2a78d6;
+  --color-cat-2: #eb6834;
+  --color-cat-3: #1baf7a;
+  --color-cat-4: #eda100;
+  --color-cat-5: #e87ba4;
+  --color-cat-6: #008300;
+  --color-cat-7: #4a3aa7;
+  --color-cat-8: #e34948;
 }
 
 @layer base {

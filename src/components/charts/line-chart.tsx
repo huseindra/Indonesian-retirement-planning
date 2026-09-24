@@ -8,7 +8,8 @@ export interface ChartSeries {
   label: string;
   /** A CSS color, normally a `var(--color-series-n)` token. */
   color: string;
-  values: number[];
+  /** One value per x; null where the series has no data (e.g. a plan that ended). */
+  values: (number | null)[];
 }
 
 interface LineChartProps {
@@ -37,6 +38,15 @@ function niceStep(rough: number): number {
   const unit = rough / power;
   const nice = unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 2.5 ? 2.5 : unit <= 5 ? 5 : 10;
   return nice * power;
+}
+
+function lastIndex(s: ChartSeries): number {
+  for (let i = s.values.length - 1; i >= 0; i--) if (s.values[i] !== null) return i;
+  return 0;
+}
+
+function formatValue(value: number | null): string {
+  return value === null ? "—" : formatRupiah(value);
 }
 
 function pickXTicks(count: number, maxTicks: number): number[] {
@@ -84,7 +94,7 @@ export function LineChart({
   const plotWidth = width - MARGIN.left - right;
   const plotHeight = height - MARGIN.top - MARGIN.bottom;
 
-  const maxValue = Math.max(0, ...series.flatMap((s) => s.values));
+  const maxValue = Math.max(0, ...series.flatMap((s) => s.values.filter((v): v is number => v !== null)));
   const step = niceStep(maxValue / 4);
   const yMax = Math.max(step, Math.ceil(maxValue / step) * step);
   const yTicks = Array.from({ length: Math.round(yMax / step) + 1 }, (_, i) => i * step);
@@ -95,7 +105,7 @@ export function LineChart({
   const last = count - 1;
 
   // End labels only when they cannot collide; otherwise legend + tooltip carry values.
-  const endYs = series.map((s) => yPos(s.values[last]));
+  const endYs = series.map((s) => yPos(s.values[lastIndex(s)] ?? 0));
   const labelsFit = showEndLabels && endYs.every((y, i) => endYs.every((o, j) => i === j || Math.abs(y - o) >= 18));
 
   function indexFromPointer(event: PointerEvent<SVGRectElement>) {
@@ -115,7 +125,8 @@ export function LineChart({
   }
 
   const anchorX = active === null ? 0 : xPos(active);
-  const pointYs = active === null ? [] : series.map((s) => yPos(s.values[active]));
+  const pointYs =
+    active === null ? [] : series.flatMap((s) => (s.values[active] === null ? [] : [yPos(s.values[active]!)]));
 
   // Centre the tooltip on the crosshair but keep it inside the chart, using
   // its measured width (values vary in length).
@@ -207,7 +218,14 @@ export function LineChart({
           ) : null}
 
           {series.map((s) => {
-            const points = s.values.map((v, i) => `${xPos(i)},${yPos(v)}`);
+            const points = s.values.map((v, i) => `${xPos(i)},${yPos(v ?? 0)}`);
+            // Start a new sub-path after each gap so missing values are not bridged.
+            const linePath = s.values
+              .map((v, i) => (v === null ? null : `${i === 0 || s.values[i - 1] === null ? "M" : "L"}${xPos(i)},${yPos(v)}`))
+              .filter(Boolean)
+              .join(" ");
+            const end = lastIndex(s);
+            const endValue = s.values[end] ?? 0;
             return (
               <g key={s.key}>
                 {area && series.length === 1 ? (
@@ -218,22 +236,22 @@ export function LineChart({
                   />
                 ) : null}
                 <path
-                  d={`M${points.join(" L")}`}
+                  d={linePath}
                   fill="none"
                   stroke={s.color}
                   strokeWidth={2}
                   strokeLinejoin="round"
                   strokeLinecap="round"
                 />
-                <circle cx={xPos(last)} cy={yPos(s.values[last])} r={4} fill={s.color} stroke="white" strokeWidth={2} />
-                {labelsFit ? (
+                <circle cx={xPos(end)} cy={yPos(endValue)} r={4} fill={s.color} stroke="white" strokeWidth={2} />
+                {labelsFit && end === last ? (
                   <text
-                    x={xPos(last) + 10}
-                    y={yPos(s.values[last])}
+                    x={xPos(end) + 10}
+                    y={yPos(endValue)}
                     dy="0.32em"
                     className="fill-ink text-[11px] font-semibold tabular-nums"
                   >
-                    {formatRupiahCompact(s.values[last])}
+                    {formatRupiahCompact(endValue)}
                   </text>
                 ) : null}
               </g>
@@ -250,17 +268,19 @@ export function LineChart({
                 className="stroke-muted"
                 strokeWidth={1}
               />
-              {series.map((s) => (
+              {series.map((s) =>
+                s.values[active] === null ? null : (
                 <circle
                   key={s.key}
                   cx={xPos(active)}
-                  cy={yPos(s.values[active])}
+                  cy={yPos(s.values[active]!)}
                   r={4.5}
                   fill={s.color}
                   stroke="white"
                   strokeWidth={2}
                 />
-              ))}
+                ),
+              )}
             </g>
           ) : null}
 
@@ -289,7 +309,7 @@ export function LineChart({
               {series.map((s) => (
                 <li key={s.key} className="flex items-center gap-2">
                   <span aria-hidden="true" className="h-0.5 w-3 rounded-full" style={{ background: s.color }} />
-                  <span className="font-semibold text-ink tabular-nums">{formatRupiah(s.values[active])}</span>
+                  <span className="font-semibold text-ink tabular-nums">{formatValue(s.values[active])}</span>
                   <span className="text-muted">{s.label}</span>
                 </li>
               ))}
@@ -324,7 +344,7 @@ export function LineChart({
                   </th>
                   {series.map((s) => (
                     <td key={s.key} className="px-3 py-1.5 text-right tabular-nums">
-                      {formatRupiah(s.values[i])}
+                      {formatValue(s.values[i])}
                     </td>
                   ))}
                 </tr>

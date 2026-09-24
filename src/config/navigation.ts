@@ -49,7 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/scenarios",
     label: "Scenarios",
     icon: "branches",
-    status: "upcoming",
+    status: "available",
     description:
       "Compare what-if scenarios such as retiring earlier, saving more or buying a home.",
   },

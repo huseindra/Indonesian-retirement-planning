@@ -274,7 +274,7 @@ function Ready({ plan }: { plan: Extract<RetirementPlanView, { status: "ready" }
             {formatRupiah(Math.abs(r.gap))}
           </p>
           <p className="mt-2 text-sm text-muted">
-            {formatRupiah(r.projectedAssets.total)} projected − {formatRupiah(r.requiredFund)} required ={" "}
+            {formatRupiah(r.retirementAssets)} projected − {formatRupiah(r.requiredFund)} required ={" "}
             {formatPercent(r.fundedRatio)} funded.
           </p>
           {surplus ? null : (

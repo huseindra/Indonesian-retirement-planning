@@ -80,6 +80,15 @@ function evaluate(scenario: Scenario, baseline: ScenarioBaseline): EvaluatedScen
   }
 }
 
+function evaluateBaseline(baseline: ScenarioBaseline): ScenarioOutcome {
+  try {
+    return { status: "ready", result: simulateRetirement(baseline.input) };
+  } catch (error) {
+    if (!(error instanceof RetirementInputError)) throw error;
+    return { status: "error", message: error.message };
+  }
+}
+
 export type ScenarioComparison =
   | { status: "incomplete"; scenarios: Scenario[] }
   | {
@@ -94,27 +103,25 @@ export function compareScenarios(userId: number, db: Database = getDb()): Scenar
   const baseline = getScenarioBaseline(userId, db);
   if (!baseline) return { status: "incomplete", scenarios };
 
-  let baselineOutcome: ScenarioOutcome;
-  try {
-    baselineOutcome = { status: "ready", result: simulateRetirement(baseline.input) };
-  } catch (error) {
-    if (!(error instanceof RetirementInputError)) throw error;
-    baselineOutcome = { status: "error", message: error.message };
-  }
-  return { status: "ready", baseline, baselineOutcome, scenarios: scenarios.map((s) => evaluate(s, baseline)) };
+  return {
+    status: "ready",
+    baseline,
+    baselineOutcome: evaluateBaseline(baseline),
+    scenarios: scenarios.map((s) => evaluate(s, baseline)),
+  };
 }
 
 export type ScenarioDetail =
   | { status: "not-found" }
   | { status: "incomplete"; scenario: Scenario }
-  | ({ status: "ready"; baseline: ScenarioBaseline } & EvaluatedScenario);
+  | ({ status: "ready"; baseline: ScenarioBaseline; baselineOutcome: ScenarioOutcome } & EvaluatedScenario);
 
 export function getScenarioDetail(userId: number, id: number, db: Database = getDb()): ScenarioDetail {
   const scenario = findScenario(userId, id, db);
   if (!scenario) return { status: "not-found" };
   const baseline = getScenarioBaseline(userId, db);
   if (!baseline) return { status: "incomplete", scenario };
-  return { status: "ready", baseline, ...evaluate(scenario, baseline) };
+  return { status: "ready", baseline, baselineOutcome: evaluateBaseline(baseline), ...evaluate(scenario, baseline) };
 }
 
 export function getScenario(userId: number, id: number, db: Database = getDb()): Scenario | null {
