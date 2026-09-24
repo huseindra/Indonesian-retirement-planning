@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChartPlaceholder } from "@/components/chart-placeholder";
 import { Icon } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
+import { ReadinessSummary, RetirementChart } from "@/components/retirement/readiness";
 import { SummaryCard } from "@/components/summary-card";
 import { requireUser } from "@/lib/auth/session";
 import { ASSET_GROUP_LABELS, HOUSING_STATUS_LABELS, isPensionGroup } from "@/lib/domain/financial-profile";
@@ -83,13 +83,19 @@ export default async function DashboardPage() {
               ? formatRupiah(summary.retirement.result.projectedAssets.total)
               : "Not yet calculated"
           }
-          detail="Projected value of your assets at retirement."
+          detail={
+            summary.retirement.status === "ready"
+              ? `Projected at age ${summary.retirement.result.input.retirementAge} · ${formatRupiahCompact(
+                  summary.retirement.result.requiredFund,
+                )} needed`
+              : "Available once your financial profile is complete."
+          }
         />
       </section>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:mt-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ChartPlaceholder />
+          <RetirementReadinessPanel retirement={summary.retirement} />
         </div>
         <CashFlowPanel profile={profile} />
       </div>
@@ -244,6 +250,53 @@ function AssetGroupsPanel({ savings }: { savings: DashboardSummary["savings"] })
             );
           })}
         </ul>
+      )}
+    </section>
+  );
+}
+
+function RetirementReadinessPanel({ retirement }: { retirement: DashboardSummary["retirement"] }) {
+  return (
+    <section
+      aria-labelledby="readiness-title"
+      className="h-full rounded-2xl border border-line bg-surface p-5 shadow-xs sm:p-6"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="readiness-title" className="text-base font-semibold">
+            Retirement readiness
+          </h2>
+          <p className="mt-1 text-sm text-muted">An estimate based on your profile and assumptions.</p>
+        </div>
+        <Link href="/retirement-plan" className="text-sm font-medium text-brand-700 hover:underline">
+          View retirement plan →
+        </Link>
+      </div>
+
+      {retirement.status === "ready" ? (
+        <div className="mt-5 grid gap-6 xl:grid-cols-5">
+          <div className="xl:col-span-2">
+            <ReadinessSummary result={retirement.result} compact />
+          </div>
+          <div className="xl:col-span-3">
+            <RetirementChart result={retirement.result} />
+          </div>
+        </div>
+      ) : retirement.status === "error" ? (
+        <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800" role="alert">
+          <p className="font-semibold">We couldn&apos;t calculate your retirement plan.</p>
+          <p className="mt-1">{retirement.message}</p>
+          <Link href="/retirement-plan" className="mt-2 inline-block font-semibold underline">
+            Fix it in Retirement Plan
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-5 rounded-xl border border-dashed border-line px-4 py-8 text-center text-sm text-muted">
+          Complete your financial profile to see whether your savings are on track for retirement.
+          <div className="mt-2">
+            <ProfileLink>Complete financial profile</ProfileLink>
+          </div>
+        </div>
       )}
     </section>
   );
