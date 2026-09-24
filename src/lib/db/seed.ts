@@ -4,6 +4,8 @@ import type { AssetAccountInput } from "../repositories/asset-accounts";
 import type { FinancialProfileInput } from "../repositories/financial-profiles";
 import type { TargetPropertyInput } from "../repositories/target-properties";
 import { DEFAULT_ASSUMPTIONS, DEFAULT_PLAN_UNTIL_AGE } from "../domain/assumptions";
+import { DEMO_PROPERTY_SCENARIO, EXAMPLE_SCENARIOS } from "../domain/scenarios";
+import { insertScenario } from "../repositories/scenarios";
 
 export const DEMO_USERNAME = "demo";
 export const DEMO_PASSWORD = "demo123";
@@ -59,7 +61,7 @@ function userExists(db: Database, username: string): boolean {
 
 /**
  * Seeds the demo user with a financial profile, asset accounts, economic
- * assumptions, a target property and retirement settings. Skipped
+ * assumptions, a target property, retirement settings and example scenarios. Skipped
  * when the demo user already exists, so it never overwrites data the user
  * has changed.
  */
@@ -96,6 +98,8 @@ export function seedDemoData(db: Database): void {
         userId,
         DEFAULT_PLAN_UNTIL_AGE,
       );
+
+      for (const scenario of [...EXAMPLE_SCENARIOS, DEMO_PROPERTY_SCENARIO]) insertScenario(userId, scenario, db);
     }
 
     if (process.env.SEED_E2E_USERS === "1") {

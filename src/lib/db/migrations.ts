@@ -175,6 +175,34 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    id: 5,
+    name: "scenario_planning_module",
+    // Each column other than name/description/include_property is an
+    // optional override: NULL means "use the baseline plan's value".
+    // Scenarios never modify the baseline tables.
+    up: `
+      CREATE TABLE scenarios (
+        id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id               INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name                  TEXT    NOT NULL,
+        description           TEXT,
+        retirement_age        INTEGER CHECK (retirement_age IS NULL OR retirement_age BETWEEN 19 AND 100),
+        monthly_spending      INTEGER CHECK (monthly_spending IS NULL OR monthly_spending >= 0),
+        inflation_bps         INTEGER CHECK (inflation_bps IS NULL OR inflation_bps BETWEEN 0 AND 3000),
+        investment_return_bps INTEGER CHECK (investment_return_bps IS NULL OR investment_return_bps BETWEEN -1000 AND 3000),
+        retirement_years      INTEGER CHECK (retirement_years IS NULL OR retirement_years BETWEEN 1 AND 60),
+        include_property      INTEGER NOT NULL DEFAULT 0 CHECK (include_property IN (0, 1)),
+        property_price        INTEGER CHECK (property_price IS NULL OR property_price > 0),
+        property_purchase_age INTEGER CHECK (property_purchase_age IS NULL OR property_purchase_age BETWEEN 18 AND 100),
+        property_growth_bps   INTEGER CHECK (property_growth_bps IS NULL OR property_growth_bps BETWEEN -1000 AND 3000),
+        created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        UNIQUE (user_id, name)
+      );
+      CREATE INDEX idx_scenarios_user_id ON scenarios(user_id);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database, pending: Migration[] = migrations): void {
