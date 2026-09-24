@@ -6,6 +6,7 @@ import { ErrorAlert } from "@/components/forms/alerts";
 import { Field, FormSection, describedBy, inputClass } from "@/components/forms/field";
 import { FormActions } from "@/components/forms/form-actions";
 import { MoneyInput } from "@/components/forms/money-input";
+import { usePreservingSubmit } from "@/components/forms/use-preserving-submit";
 import {
   ASSET_CATEGORY_LABELS,
   ASSET_GROUPS,
@@ -33,13 +34,14 @@ export function AssetForm({ defaults }: { defaults: AssetFormDefaults }) {
   const errors = state.errors;
   const isNew = defaults.id === undefined;
   const alertRef = useRef<HTMLDivElement>(null);
+  const onSubmit = usePreservingSubmit(formAction);
 
   useEffect(() => {
     if (state.formError) alertRef.current?.focus();
   }, [state]);
 
   return (
-    <form action={formAction} noValidate className="space-y-6">
+    <form action={formAction} onSubmit={onSubmit} noValidate className="space-y-6">
       {isNew ? null : <input type="hidden" name="id" value={defaults.id} />}
 
       {state.formError ? (

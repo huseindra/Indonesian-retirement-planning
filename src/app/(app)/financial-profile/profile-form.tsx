@@ -6,6 +6,7 @@ import { ErrorAlert } from "@/components/forms/alerts";
 import { Field, FormSection, describedBy, inputClass } from "@/components/forms/field";
 import { FormActions } from "@/components/forms/form-actions";
 import { MoneyInput } from "@/components/forms/money-input";
+import { usePreservingSubmit } from "@/components/forms/use-preserving-submit";
 import {
   HOUSING_STATUSES,
   HOUSING_STATUS_LABELS,
@@ -53,6 +54,7 @@ export function ProfileForm({ defaults, isNew }: { defaults: ProfileFormDefaults
 
   const [housingStatus, setHousingStatus] = useState<HousingStatus | "">(defaults.housingStatus);
   const alertRef = useRef<HTMLDivElement>(null);
+  const onSubmit = usePreservingSubmit(formAction);
 
   // Move focus to the error summary after a failed save so screen-reader
   // and keyboard users land on what needs fixing.
@@ -63,7 +65,7 @@ export function ProfileForm({ defaults, isNew }: { defaults: ProfileFormDefaults
   const errorList = FIELD_ORDER.filter((field) => errors[field]);
 
   return (
-    <form action={formAction} noValidate className="space-y-6">
+    <form action={formAction} onSubmit={onSubmit} noValidate className="space-y-6">
       {state.formError ? (
         <div ref={alertRef} tabIndex={-1} className="outline-none">
           <ErrorAlert id="profile-form-error">
