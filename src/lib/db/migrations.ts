@@ -203,6 +203,59 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_scenarios_user_id ON scenarios(user_id);
     `,
   },
+  {
+    id: 6,
+    name: "ai_insights_module",
+    // AI Insights: cited_values/action_payload/edited_action_payload hold
+    // JSON text (arrays/objects), validated in application code before
+    // being written — SQLite has no native JSON column type. action_type
+    // is restricted to a fixed whitelist; applying an insight always goes
+    // through the same validated write paths as manual edits (Stage 2/3/5).
+    up: `
+      CREATE TABLE ai_insights (
+        id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id                INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        batch_id               TEXT    NOT NULL,
+        provider               TEXT    NOT NULL,
+        model                  TEXT,
+        kind                   TEXT    NOT NULL CHECK (kind IN
+                                  ('funding_gap', 'inflation_sensitivity', 'delay_retirement',
+                                   'increase_savings', 'property_purchase', 'scenario_comparison')),
+        observation            TEXT    NOT NULL,
+        reasoning              TEXT    NOT NULL,
+        cited_values           TEXT    NOT NULL,
+        confidence             TEXT    NOT NULL CHECK (confidence IN ('low', 'medium', 'high')),
+        action_type            TEXT    NOT NULL CHECK (action_type IN
+                                  ('none', 'create_scenario', 'update_assumptions')),
+        action_label           TEXT    NOT NULL,
+        action_payload         TEXT    NOT NULL,
+        edited_action_label    TEXT,
+        edited_action_payload  TEXT,
+        status                 TEXT    NOT NULL DEFAULT 'pending' CHECK (status IN
+                                  ('pending', 'edited', 'accepted', 'applied', 'rejected', 'dismissed')),
+        created_at             TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at             TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+      CREATE INDEX idx_ai_insights_user_id ON ai_insights(user_id);
+      CREATE INDEX idx_ai_insights_batch_id ON ai_insights(batch_id);
+
+      -- Audit trail: one row per state change (generated/edited/accepted/
+      -- rejected/dismissed/applied). Kept even if the insight itself is
+      -- deleted from under it in the future, so history survives — hence
+      -- no ON DELETE CASCADE tie to ai_insights beyond the FK for lookups.
+      CREATE TABLE ai_insight_events (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        insight_id   INTEGER NOT NULL REFERENCES ai_insights(id) ON DELETE CASCADE,
+        user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        event_type   TEXT    NOT NULL CHECK (event_type IN
+                        ('generated', 'edited', 'accepted', 'rejected', 'dismissed', 'applied')),
+        detail       TEXT,
+        created_at   TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+      CREATE INDEX idx_ai_insight_events_insight_id ON ai_insight_events(insight_id);
+      CREATE INDEX idx_ai_insight_events_user_id ON ai_insight_events(user_id);
+    `,
+  },
 ];
 
 export function runMigrations(db: Database, pending: Migration[] = migrations): void {

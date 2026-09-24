@@ -53,7 +53,8 @@ export interface AiInsightContent {
   confidence: ConfidenceLabel;
   actionType: ActionType;
   actionLabel: string;
-  actionPayload: ActionPayload | null;
+  /** `{}` when actionType is "none". */
+  actionPayload: ActionPayload;
 }
 
 export const INSIGHT_STATUSES = ["pending", "edited", "accepted", "applied", "rejected", "dismissed"] as const;
