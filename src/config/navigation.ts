@@ -53,4 +53,12 @@ export const NAV_ITEMS: NavItem[] = [
     description:
       "Compare what-if scenarios such as retiring earlier, saving more or buying a home.",
   },
+  {
+    href: "/ai-insights",
+    label: "AI Insights",
+    icon: "sparkle",
+    status: "available",
+    description:
+      "AI-interpreted observations about your plan, with sources you can check and nothing applied without your say-so.",
+  },
 ];

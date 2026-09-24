@@ -15,7 +15,7 @@ import { formatRupiah } from "@/lib/format/currency";
 import { formatRate } from "@/lib/projection/compound";
 import type { ResolvedValue } from "@/lib/scenarios/resolve";
 import { applicableFields, getScenarioDetail } from "@/lib/services/scenarios";
-import { ActionButton } from "../action-button";
+import { ActionButton } from "@/components/action-button";
 import { ApplyForm, type ApplyOption } from "../apply-form";
 
 export const metadata: Metadata = { title: "Scenario" };

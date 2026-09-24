@@ -9,7 +9,7 @@ import { ComparisonTable, TrajectoryChart, planColor, type ComparedPlan } from "
 import { scenarioStatusMessage } from "@/config/scenario-status";
 import { requireUser } from "@/lib/auth/session";
 import { compareScenarios } from "@/lib/services/scenarios";
-import { ActionButton } from "./action-button";
+import { ActionButton } from "@/components/action-button";
 
 export const metadata: Metadata = { title: "Scenarios" };
 

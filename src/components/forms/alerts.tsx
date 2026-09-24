@@ -25,3 +25,31 @@ export function SuccessAlert({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
+
+const BANNER_STYLES = {
+  success: "border-brand-200 bg-brand-50 text-brand-800",
+  info: "border-line bg-canvas text-ink",
+  warning: "border-amber-200 bg-amber-50 text-amber-900",
+} as const;
+
+const BANNER_ICON = { success: "check", info: "info", warning: "alert" } as const;
+
+/** A status banner in one of three tones, for outcomes that are neither a plain success nor an error. */
+export function Banner({
+  tone,
+  children,
+}: {
+  tone: keyof typeof BANNER_STYLES;
+  children: React.ReactNode;
+}) {
+  return (
+    <p
+      role="status"
+      data-testid="success-message"
+      className={`flex items-start gap-2 rounded-lg border px-3.5 py-3 text-sm ${BANNER_STYLES[tone]}`}
+    >
+      <Icon name={BANNER_ICON[tone]} className="mt-0.5 size-4 shrink-0" />
+      <span>{children}</span>
+    </p>
+  );
+}

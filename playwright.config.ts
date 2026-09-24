@@ -23,9 +23,11 @@ export default defineConfig({
   webServer: {
     // A separate, freshly reset database keeps test data out of the dev
     // database. SEED_E2E_USERS adds profile-less users for CRUD tests.
+    // AI_PROVIDER=mock exercises the real generate → persist → act flow
+    // deterministically, without a live Anthropic API key.
     command: `node -e "for (const s of ['', '-wal', '-shm']) require('fs').rmSync('data/e2e.db' + s, { force: true })" && npm run build && npx next start -p ${PORT}`,
     url: `${baseURL}/login`,
-    env: { DATABASE_PATH: "./data/e2e.db", SEED_E2E_USERS: "1" },
+    env: { DATABASE_PATH: "./data/e2e.db", SEED_E2E_USERS: "1", AI_PROVIDER: "mock" },
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

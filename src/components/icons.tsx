@@ -25,6 +25,8 @@ const PATHS = {
   trash: "M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3",
   reset: "M3 12a9 9 0 1 0 3-6.7M3 4v5h5",
   info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5v-4m0-4h.01",
+  sparkle:
+    "M12 3v4m0 10v4M3 12h4m10 0h4M6 6l2.5 2.5M17.5 15.5 20 18M6 18l2.5-2.5M17.5 8.5 20 6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

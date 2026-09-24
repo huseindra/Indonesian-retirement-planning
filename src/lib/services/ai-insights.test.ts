@@ -63,6 +63,15 @@ describe("ai insights service", () => {
     expect(listInsightsByUserId(demoId, db)).toEqual([]);
   });
 
+  it("reports an AI error distinctly from unavailable, and persists nothing", async () => {
+    process.env.AI_PROVIDER = "mock-error";
+    const result = await generateInsights(demoId, db);
+    expect(result).toEqual({ status: "ai_error", message: expect.stringMatching(/Simulated failure/) });
+    expect(listInsightsByUserId(demoId, db)).toEqual([]);
+    // The app stays usable: the baseline plan is still readable.
+    expect(getInsightsPage(demoId, db).baseline).toEqual({ status: "ready" });
+  });
+
   it("generates and persists insights via the mock provider", async () => {
     process.env.AI_PROVIDER = "mock";
     const result = await generateInsights(demoId, db);
