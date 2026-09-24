@@ -1,0 +1,114 @@
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+bower_components/
+jspm_packages/
+vendor/
+.venv/
+venv/
+env/
+__pypackages__/
+
+# ---------------------------------------------------------------------------
+# Build output & caches
+# ---------------------------------------------------------------------------
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.turbo/
+.vercel/
+.netlify/
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+next-env.d.ts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------------------
+# Test & coverage artifacts
+# ---------------------------------------------------------------------------
+coverage/
+.nyc_output/
+htmlcov/
+.coverage
+.coverage.*
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# ---------------------------------------------------------------------------
+# Environment & secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------------------------------------------------------------------------
+# Local database runtime artifacts
+# (schema files and migrations ARE versioned; runtime data is not)
+# ---------------------------------------------------------------------------
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.db-shm
+*.db-wal
+pgdata/
+.pgdata/
+postgres-data/
+mysql-data/
+.data/
+
+# ---------------------------------------------------------------------------
+# Logs & temporary files
+# ---------------------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# ---------------------------------------------------------------------------
+# OS & editor artifacts
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.sublime-workspace
