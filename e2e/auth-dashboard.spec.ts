@@ -42,7 +42,7 @@ test("demo user can sign in, see the dashboard and sign out", async ({ page, isM
   await expect(summary.getByText("Rp 469.750.000")).toBeVisible();
   await expect(summary.getByText("Not yet calculated")).toBeVisible();
   await expect(page.getByRole("img", { name: /future retirement projection chart/ })).toBeVisible();
-  await expect(page.getByText("BPJS Ketenagakerjaan – JHT")).toBeVisible();
+  await expect(page.getByText("JHT – BPJS Ketenagakerjaan")).toBeVisible();
 
   // Session survives a reload because it is stored server-side.
   await page.reload();
