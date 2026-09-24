@@ -10,7 +10,12 @@ const DEFAULT_DATABASE_PATH = path.join(process.cwd(), "data", "app.db");
 
 export function resolveDatabasePath(): string {
   const configured = process.env.DATABASE_PATH;
-  return configured ? path.resolve(configured) : DEFAULT_DATABASE_PATH;
+  if (configured) return path.resolve(configured);
+  // Serverless platforms such as Vercel only allow writes under /tmp. The
+  // database there is recreated and re-seeded on each cold start, so data
+  // does not persist between instances (fine for the demo, not for real use).
+  if (process.env.VERCEL) return path.join("/tmp", "app.db");
+  return DEFAULT_DATABASE_PATH;
 }
 
 /**

@@ -125,3 +125,27 @@ describe("migration 2 (financial profile module)", () => {
     db.close();
   });
 });
+
+describe("resolveDatabasePath", () => {
+  const saved = { DATABASE_PATH: process.env.DATABASE_PATH, VERCEL: process.env.VERCEL };
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  it("prefers DATABASE_PATH, then /tmp on Vercel, then data/app.db", async () => {
+    const { resolveDatabasePath } = await import("./client");
+    delete process.env.DATABASE_PATH;
+    delete process.env.VERCEL;
+    expect(resolveDatabasePath()).toMatch(/data[/\\]app\.db$/);
+
+    process.env.VERCEL = "1";
+    expect(resolveDatabasePath()).toBe("/tmp/app.db");
+
+    process.env.DATABASE_PATH = "/var/data/custom.db";
+    expect(resolveDatabasePath()).toBe("/var/data/custom.db");
+  });
+});
