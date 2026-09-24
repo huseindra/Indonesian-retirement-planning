@@ -41,7 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/retirement-plan",
     label: "Retirement Plan",
     icon: "target",
-    status: "upcoming",
+    status: "available",
     description:
       "Project your retirement fund year by year and see whether it covers your retirement goal.",
   },
