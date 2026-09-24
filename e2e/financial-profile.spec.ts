@@ -35,7 +35,8 @@ test("financial profile create, view, edit and delete journey", async ({ page },
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Complete your financial profile" })).toBeVisible();
     const summary = page.getByRole("region", { name: "Summary" });
-    await expect(summary.getByText("Not set")).toHaveCount(3);
+    // All four cards, including the Stage 4 retirement fund card.
+    await expect(summary.getByText("Not set")).toHaveCount(4);
     await expect(summary.getByText(/Rp \d/)).toHaveCount(0);
   });
 

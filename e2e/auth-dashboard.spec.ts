@@ -40,8 +40,11 @@ test("demo user can sign in, see the dashboard and sign out", async ({ page, isM
   await expect(summary.getByRole("heading", { name: "Target Retirement Age" })).toBeVisible();
   await expect(summary.getByText("58 years")).toBeVisible();
   await expect(summary.getByText("Rp 469.750.000")).toBeVisible();
-  await expect(summary.getByText("Not yet calculated")).toBeVisible();
-  await expect(page.getByRole("img", { name: /future retirement projection chart/ })).toBeVisible();
+  // Stage 4 replaced the placeholders with real retirement readiness.
+  await expect(summary.getByText("Rp 2.877.738.653")).toBeVisible();
+  const readiness = page.getByRole("region", { name: "Retirement readiness" });
+  await expect(readiness.getByText("Projected shortfall")).toBeVisible();
+  await expect(readiness.getByRole("img", { name: /Projected assets grow/ })).toBeVisible();
   await expect(page.getByText("JHT – BPJS Ketenagakerjaan")).toBeVisible();
 
   // Session survives a reload because it is stored server-side.
