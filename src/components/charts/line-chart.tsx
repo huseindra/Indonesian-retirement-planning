@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { formatRupiah, formatRupiahCompact } from "@/lib/format/currency";
 
 export interface ChartSeries {
@@ -68,6 +68,7 @@ export function LineChart({
   const [width, setWidth] = useState(640);
   const [active, setActive] = useState<number | null>(null);
   const tableId = useId();
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -113,7 +114,22 @@ export function LineChart({
     else if (event.key === "Escape") setActive(null);
   }
 
-  const tooltipLeft = active === null ? 0 : Math.min(Math.max(xPos(active), 130), width - 130);
+  const anchorX = active === null ? 0 : xPos(active);
+  const pointYs = active === null ? [] : series.map((s) => yPos(s.values[active]));
+
+  // Centre the tooltip on the crosshair but keep it inside the chart, using
+  // its measured width (values vary in length).
+  useLayoutEffect(() => {
+    const tip = tooltipRef.current;
+    if (!tip) return;
+    const half = tip.offsetWidth / 2;
+    tip.style.left = `${Math.min(Math.max(anchorX, half), Math.max(half, width - half))}px`;
+    // Sit in the half of the plot away from the highlighted points so the
+    // tooltip never hides the values it describes.
+    const highestPoint = Math.min(...pointYs);
+    const plotMiddle = MARGIN.top + plotHeight / 2;
+    tip.style.top = `${highestPoint < plotMiddle ? MARGIN.top + plotHeight - tip.offsetHeight - 4 : 0}px`;
+  });
 
   return (
     <div>
@@ -263,9 +279,10 @@ export function LineChart({
 
         {active !== null ? (
           <div
+            ref={tooltipRef}
             role="presentation"
-            className="pointer-events-none absolute top-0 z-10 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-line bg-surface px-3 py-2 text-xs whitespace-nowrap shadow-lg"
-            style={{ left: tooltipLeft }}
+            className="pointer-events-none absolute z-10 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-line bg-surface px-3 py-2 text-xs whitespace-nowrap shadow-lg"
+            style={{ left: anchorX, top: 0 }}
           >
             <p className="font-medium text-muted">{xLabels?.[active] ?? x[active]}</p>
             <ul className="mt-1.5 space-y-1">
