@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRupiah, formatRupiahCompact } from "./currency";
+import { formatPercent, formatRupiah, formatRupiahCompact } from "./currency";
 
 describe("formatRupiah", () => {
   it("uses Indonesian thousand separators and no decimals", () => {
@@ -23,5 +23,13 @@ describe("formatRupiahCompact", () => {
 
   it("falls back to full format for small amounts", () => {
     expect(formatRupiahCompact(500)).toBe("Rp 500");
+  });
+});
+
+describe("formatPercent", () => {
+  it("uses a decimal comma and one decimal place", () => {
+    expect(formatPercent(0.2762815625)).toBe("27,6%");
+    expect(formatPercent(-0.05)).toBe("-5,0%");
+    expect(formatPercent(0)).toBe("0,0%");
   });
 });

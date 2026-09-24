@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/living-costs",
     label: "Living Costs",
     icon: "home",
-    status: "upcoming",
+    status: "available",
     description:
       "Estimate today's living and housing costs and how inflation will change them by retirement.",
   },

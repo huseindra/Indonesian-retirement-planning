@@ -3,7 +3,7 @@
 import { useActionState, useId, useRef } from "react";
 import type { DeleteState } from "@/app/actions/financial-profile";
 import { ErrorAlert } from "./forms/alerts";
-import { Icon } from "./icons";
+import { Icon, type IconName } from "./icons";
 
 type DeleteAction = (prev: DeleteState, formData: FormData) => Promise<DeleteState>;
 
@@ -20,6 +20,9 @@ export function ConfirmDelete({
   triggerAriaLabel,
   hiddenFields = {},
   variant = "button",
+  tone = "danger",
+  triggerIcon = "trash",
+  pendingLabel = "Deleting…",
 }: {
   action: DeleteAction;
   title: string;
@@ -30,6 +33,10 @@ export function ConfirmDelete({
   hiddenFields?: Record<string, string | number>;
   /** "icon" renders a compact trash-can trigger for list rows. */
   variant?: "button" | "icon";
+  /** "neutral" suits reversible actions such as resetting to defaults. */
+  tone?: "danger" | "neutral";
+  triggerIcon?: IconName;
+  pendingLabel?: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [state, formAction, pending] = useActionState(action, { error: null });
@@ -45,10 +52,12 @@ export function ConfirmDelete({
         className={
           variant === "icon"
             ? "grid size-9 place-items-center rounded-lg text-muted hover:bg-red-50 hover:text-red-700"
-            : "inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-surface px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+            : tone === "danger"
+              ? "inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-surface px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"
+              : "inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink hover:bg-canvas"
         }
       >
-        <Icon name="trash" className={variant === "icon" ? "size-5" : "size-4"} />
+        <Icon name={triggerIcon} className={variant === "icon" ? "size-5" : "size-4"} />
         {variant === "icon" ? null : triggerLabel}
       </button>
 
@@ -64,8 +73,12 @@ export function ConfirmDelete({
           ))}
 
           <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-red-50 text-red-700">
-              <Icon name="alert" className="size-5" />
+            <span
+              className={`grid size-10 shrink-0 place-items-center rounded-full ${
+                tone === "danger" ? "bg-red-50 text-red-700" : "bg-brand-50 text-brand-700"
+              }`}
+            >
+              <Icon name={tone === "danger" ? "alert" : "info"} className="size-5" />
             </span>
             <div>
               <h2 id={titleId} className="text-base font-semibold">
@@ -96,10 +109,12 @@ export function ConfirmDelete({
               type="submit"
               disabled={pending}
               aria-busy={pending}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-80"
+              className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-80 ${
+                tone === "danger" ? "bg-red-600 hover:bg-red-700" : "bg-brand-600 hover:bg-brand-700"
+              }`}
             >
               {pending ? <Icon name="spinner" className="size-4 animate-spin" /> : null}
-              {pending ? "Deleting…" : confirmLabel}
+              {pending ? pendingLabel : confirmLabel}
             </button>
           </div>
         </form>

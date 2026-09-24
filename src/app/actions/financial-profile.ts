@@ -11,19 +11,11 @@ import {
   updateAsset,
   type MutationResult,
 } from "@/lib/services/financial-profile";
-import type { AssetField, FieldErrors, ProfileField } from "@/lib/validation/financial-profile";
+import type { AssetField, ProfileField } from "@/lib/validation/financial-profile";
 import type { ProfileStatus } from "@/config/profile-status";
+import type { DeleteState, FormState } from "./types";
 
-export interface FormState<K extends string> {
-  errors: FieldErrors<K>;
-  formError: string | null;
-  /** Submitted values, so the form can be re-filled after a failed save. */
-  values: Record<string, string>;
-}
-
-export interface DeleteState {
-  error: string | null;
-}
+export type { DeleteState, FormState } from "./types";
 
 const PROFILE_PATH = "/financial-profile";
 const UNEXPECTED = "Something went wrong while saving. Please try again.";

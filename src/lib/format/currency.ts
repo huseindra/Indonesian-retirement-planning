@@ -29,3 +29,14 @@ export function formatRupiahCompact(amount: number): string {
   if (!unit) return formatRupiah(amount);
   return `${sign}Rp ${compactNumber.format(absolute / unit.value)} ${unit.suffix}`;
 }
+
+const percentFormatter = new Intl.NumberFormat("id-ID", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+/** Formats a fraction as an Indonesian percentage, e.g. 0.2763 → `27,6%`. */
+export function formatPercent(fraction: number): string {
+  return percentFormatter.format(fraction).replace(/ /g, " ");
+}

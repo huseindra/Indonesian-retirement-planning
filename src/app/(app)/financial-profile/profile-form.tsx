@@ -6,6 +6,7 @@ import { ErrorAlert } from "@/components/forms/alerts";
 import { Field, FormSection, describedBy, inputClass } from "@/components/forms/field";
 import { FormActions } from "@/components/forms/form-actions";
 import { MoneyInput } from "@/components/forms/money-input";
+import { AgeInput } from "@/components/forms/suffixed-input";
 import { usePreservingSubmit } from "@/components/forms/use-preserving-submit";
 import {
   HOUSING_STATUSES,
@@ -224,41 +225,5 @@ export function ProfileForm({ defaults, isNew }: { defaults: ProfileFormDefaults
         cancelHref="/financial-profile"
       />
     </form>
-  );
-}
-
-function AgeInput({
-  name,
-  defaultValue,
-  error,
-  hasHint = false,
-}: {
-  name: string;
-  defaultValue: string;
-  error?: string;
-  hasHint?: boolean;
-}) {
-  return (
-    <div className="relative">
-      <input
-        id={name}
-        name={name}
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        maxLength={3}
-        autoComplete="off"
-        defaultValue={defaultValue}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(name, hasHint, error)}
-        className={`${inputClass} pr-16 tabular-nums`}
-      />
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3.5 text-sm text-muted"
-      >
-        years
-      </span>
-    </div>
   );
 }

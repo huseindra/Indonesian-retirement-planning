@@ -18,6 +18,10 @@
   --color-ink: #0f1f1a;
   --color-muted: #5b6b66;
   --color-line: #e2e8e5;
+
+  /* Chart series (validated for CVD separation and 3:1 contrast on white). */
+  --color-series-1: #0b8467;
+  --color-series-2: #d97706;
 }
 
 @layer base {
