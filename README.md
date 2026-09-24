@@ -5,12 +5,14 @@ help users understand whether their income, savings, pension assets (BPJS
 Ketenagakerjaan JHT, DPLK), living costs, inflation and future housing costs
 are enough to reach their retirement goals.
 
-**Current stage: 5 — Scenario Planning.** On top of the foundation, financial
-profile, living-cost projections and retirement simulation (Stages 1–4), users
-can create, view, edit, duplicate and delete what-if scenarios. Scenarios
-override selected assumptions without changing the saved plan, and are compared
-side by side, with retirement trajectories, using the same retirement engine. AI
-features come in a later stage.
+**Current stage: 6 — AI Insights.** On top of the foundation, financial
+profile, living-cost projections, retirement simulation and scenario planning
+(Stages 1–5), an AI-assisted interpretation layer explains the plan's own
+numbers — funding gap, inflation sensitivity, delaying retirement, increasing
+savings, a planned property purchase, and differences between scenarios — and
+lets the user accept, edit, reject or dismiss each suggestion. The AI never
+computes financial results itself and never writes to the plan without an
+explicit, confirmed action from the user.
 
 ## Getting started
 
@@ -30,6 +32,11 @@ Sign in with the demo account:
 The SQLite database is created automatically at `data/app.db` on first use,
 migrated, and seeded with the demo user. Set `DATABASE_PATH` to use another
 file (see `.env.example`). To start over, run `npm run db:reset`.
+
+AI Insights needs a provider. Without one configured, the rest of the app
+still works — the AI Insights page shows an "unavailable" state instead of
+failing. See [AI Insights module](#ai-insights-module) for the environment
+variables.
 
 ## Scripts
 
@@ -88,6 +95,8 @@ without changing the UI architecture.
 | `target_properties`  | One target property per user: description, today's price, purchase age, optional growth rate (NULL = use the housing-growth assumption) |
 | `retirement_settings` | Per-user plan-until (life-expectancy) age, 50–120; no row = 85 |
 | `scenarios`          | Named what-if scenarios. Every override column is nullable, and NULL means "use the baseline": retirement age, monthly spending, inflation, return, retirement duration, property purchase (flag, price, age, growth) |
+| `ai_insights`        | AI-generated suggestions: kind, observation, reasoning, cited values, confidence, a whitelisted action type/payload, the user's edited version (if any), and status (`pending`/`edited`/`accepted`/`applied`/`rejected`/`dismissed`) |
+| `ai_insight_events`  | Audit trail: one row per state transition (`generated`, `edited`, `accepted`, `rejected`, `dismissed`, `applied`), with a JSON detail (e.g. the created scenario id, or the before/after assumptions) |
 | `schema_migrations`  | Applied migration ids                                    |
 
 Money is stored as integer Rupiah. Schema changes are added as new entries in
@@ -177,6 +186,55 @@ Results are estimates from these assumptions, not guaranteed outcomes.
 - **Examples.** Base, Conservative and Optimistic are assumption sets, not
   forecasts. The demo user also gets a home-purchase scenario, and other users
   can add the examples from the empty state.
+
+### AI Insights module
+
+| Route          | Purpose                                                          |
+| -------------- | ----------------------------------------------------------------- |
+| `/ai-insights` | Generate, review and act on AI-interpreted observations about the plan |
+
+- **The AI explains, it never calculates.** `computeFinancialSignals()`
+  (`src/lib/ai/signals.ts`) is the only bridge between the deterministic
+  engine and the AI: it re-runs `simulateRetirement()` and the Stage 5
+  scenario helpers with one input changed at a time (e.g. retirement age +2
+  years, inflation ±1 point) and hands the AI structured numbers, never the
+  other way around. `buildAiContext()` (`src/lib/ai/context.ts`) is a strict
+  allowlist of those numbers plus a few profile fields — no name, city,
+  account or property descriptions ever reach the provider.
+- **Two providers, one interface.** `AiInsightProvider`
+  (`src/lib/ai/provider.ts`) is implemented by `AnthropicInsightProvider`
+  (`src/lib/ai/anthropic-provider.ts`, forced tool-use for structured JSON)
+  and `MockInsightProvider` (`src/lib/ai/mock-provider.ts`, deterministic
+  templates, no network). `getAiProvider()` picks one from environment
+  variables and never throws — an unconfigured or failing AI degrades to an
+  "unavailable" or "error" state; the rest of the app keeps working.
+- **Untrusted by default.** Every provider response passes through
+  `validateAiResponse()` (`src/lib/ai/validate-response.ts`), which drops
+  malformed entries, restricts each suggestion's `kind` to signals actually
+  sent, clamps `confidence` and `actionType` to fixed enums, and caps the
+  count and text length. The AI's own prose is always labeled ("AI
+  interpretation") and shown separately from the deterministic figures it
+  cites.
+- **A suggestion can never silently change the plan.** `actionType` is
+  restricted to three values — `none`, `create_scenario`,
+  `update_assumptions` — each mapping to an existing, already-validated
+  write path (Stage 5's `createScenario`, Stage 3's `saveAssumptions`); no
+  new unchecked write exists. Applying requires two separate steps: **Accept**
+  (no write) and then a confirmed **Apply**, which first shows the exact
+  values that would be written. Suggestions can also be **Edit**ed (the
+  proposed values only, never the AI's own explanation) or **Reject**ed /
+  **Dismiss**ed, all logged to `ai_insight_events` for an audit trail.
+- **Environment variables** (see `.env.example`):
+
+  | Variable             | Effect                                                  |
+  | --------------------- | -------------------------------------------------------- |
+  | `AI_PROVIDER=mock`    | Deterministic, network-free provider (used by `npm run test:e2e`) |
+  | `AI_PROVIDER=disabled`| AI Insights reports "unavailable"; rest of the app unaffected |
+  | `ANTHROPIC_API_KEY`   | Enables the real Anthropic provider (used when `AI_PROVIDER` is unset) |
+  | `ANTHROPIC_MODEL`     | Overrides the default model                              |
+
+  With nothing set, the page shows an "unavailable" state rather than an
+  error.
 
 ### Deploying to Vercel
 

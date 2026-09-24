@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth/session";
 import { ASSET_GROUP_LABELS, HOUSING_STATUS_LABELS, isPensionGroup } from "@/lib/domain/financial-profile";
 import { formatRupiah, formatRupiahCompact } from "@/lib/format/currency";
 import { getDashboardSummary, type DashboardSummary } from "@/lib/services/dashboard";
+import { getInsightsPage } from "@/lib/services/ai-insights";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -101,7 +102,44 @@ export default async function DashboardPage() {
       </div>
 
       {profile ? <AssetGroupsPanel savings={savings} /> : null}
+      {profile ? <AiInsightsTeaser userId={user.id} /> : null}
     </>
+  );
+}
+
+function AiInsightsTeaser({ userId }: { userId: number }) {
+  const { insights } = getInsightsPage(userId);
+  const open = insights.filter((i) => i.status === "pending" || i.status === "edited" || i.status === "accepted");
+
+  return (
+    <section
+      aria-labelledby="ai-insights-teaser-title"
+      className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-6"
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-violet-50 text-violet-700">
+          <Icon name="sparkle" className="size-5" />
+        </span>
+        <div>
+          <h2 id="ai-insights-teaser-title" className="text-base font-semibold">
+            AI Insights
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            {open.length > 0
+              ? `${open.length} suggestion${open.length === 1 ? "" : "s"} waiting for your review.`
+              : insights.length > 0
+                ? "You're all caught up. Generate again any time your plan changes."
+                : "AI-interpreted observations about your plan — nothing changes until you say so."}
+          </p>
+        </div>
+      </div>
+      <Link
+        href="/ai-insights"
+        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+      >
+        {open.length > 0 ? "Review suggestions" : "Open AI Insights"} →
+      </Link>
+    </section>
   );
 }
 
