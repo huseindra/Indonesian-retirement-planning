@@ -46,8 +46,8 @@ export function ChartPlaceholder() {
           />
         </svg>
         <div className="absolute inset-0 grid place-items-center p-6 text-center">
-          <div className="max-w-xs">
-            <span className="mx-auto grid size-11 place-items-center rounded-full bg-surface text-muted shadow-xs ring-1 ring-line">
+          <div className="max-w-xs rounded-xl bg-surface/90 px-5 py-4 shadow-xs ring-1 ring-line">
+            <span className="mx-auto grid size-11 place-items-center rounded-full bg-canvas text-muted">
               <Icon name="chart" className="size-5" />
             </span>
             <p className="mt-3 text-sm font-medium text-ink">Retirement projection chart</p>

@@ -1,4 +1,4 @@
-export function Brand({ className = "" }: { className?: string }) {
+export function Brand({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   return (
     <span className={`flex items-center gap-2.5 ${className}`}>
       <span
@@ -9,7 +9,9 @@ export function Brand({ className = "" }: { className?: string }) {
       </span>
       <span className="leading-tight">
         <span className="block text-base font-semibold text-ink">Pensiun Planner</span>
-        <span className="block text-xs text-muted">Indonesian retirement planning</span>
+        {compact ? null : (
+          <span className="block text-xs text-muted">Indonesian retirement planning</span>
+        )}
       </span>
     </span>
   );

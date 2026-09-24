@@ -32,8 +32,8 @@ export function SummaryCard({
         </span>
       </div>
       <p
-        className={`mt-3 text-2xl font-semibold tracking-tight break-words ${
-          placeholder ? "text-muted" : "text-ink"
+        className={`mt-3 font-semibold tracking-tight break-words ${
+          placeholder ? "text-lg text-muted" : "text-2xl text-ink"
         }`}
       >
         {value}

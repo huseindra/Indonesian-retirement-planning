@@ -66,14 +66,14 @@ export function AppShell({ user, children }: { user: User; children: React.React
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center border-b border-line px-5">
-          <Brand />
+          <Brand compact />
         </div>
         <SidebarContent user={user} />
       </aside>
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur lg:hidden">
-        <Brand />
+        <Brand compact />
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
@@ -103,7 +103,7 @@ export function AppShell({ user, children }: { user: User; children: React.React
             className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-surface shadow-xl"
           >
             <div className="flex h-16 items-center justify-between border-b border-line px-4">
-              <Brand />
+              <Brand compact />
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
