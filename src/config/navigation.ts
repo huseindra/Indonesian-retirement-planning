@@ -25,7 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/financial-profile",
     label: "Financial Profile",
     icon: "wallet",
-    status: "upcoming",
+    status: "available",
     description:
       "Record your income, savings, investments and pension assets such as BPJS JHT and DPLK.",
   },
