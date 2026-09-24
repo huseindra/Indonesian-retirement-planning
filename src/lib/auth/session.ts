@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import type { User } from "../repositories/users";
@@ -27,7 +27,14 @@ export async function startSession(userId: number): Promise<void> {
   (await cookies()).set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // A `Secure` cookie is silently dropped by the browser on a plain HTTP
+    // origin (anything but localhost) — `NODE_ENV === "production"` is not
+    // a reliable proxy for "served over HTTPS" (e.g. `next start` behind a
+    // plain-HTTP tunnel/proxy is still NODE_ENV=production), and marking
+    // the cookie secure there breaks every navigation after login. Trust
+    // the proxy's forwarded protocol (set by Vercel and most reverse
+    // proxies) instead, defaulting to false when it's absent.
+    secure: (await headers()).get("x-forwarded-proto") === "https",
     path: "/",
     expires: expiresAt,
   });

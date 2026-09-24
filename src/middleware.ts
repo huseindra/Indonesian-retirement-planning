@@ -27,5 +27,6 @@ export const config = {
     "/living-costs/:path*",
     "/retirement-plan/:path*",
     "/scenarios/:path*",
+    "/ai-insights/:path*",
   ],
 };
