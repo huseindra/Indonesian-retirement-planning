@@ -190,7 +190,7 @@ export function LineChart({
                 textAnchor="end"
                 className="fill-muted text-[11px] tabular-nums"
               >
-                {tick === 0 ? "Rp 0" : formatRupiahCompact(tick)}
+                {formatRupiahCompact(tick)}
               </text>
             </g>
           ))}

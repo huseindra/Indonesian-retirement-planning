@@ -160,6 +160,35 @@ function ProfileDetails({
       </section>
 
       <section
+        aria-labelledby="profile-next-title"
+        className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      >
+        <div>
+          <h2 id="profile-next-title" className="text-base font-semibold">
+            See what this means for retirement
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Your income, expenses and assets are the starting point for your projected living costs and
+            retirement fund.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href="/living-costs"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+          >
+            Living Costs →
+          </Link>
+          <Link
+            href="/retirement-plan"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+          >
+            Retirement Plan →
+          </Link>
+        </div>
+      </section>
+
+      <section
         aria-labelledby="danger-title"
         className="flex flex-col gap-4 rounded-2xl border border-red-200 bg-surface p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
       >

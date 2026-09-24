@@ -25,6 +25,8 @@ export interface AssetFormDefaults {
   balance: string;
 }
 
+const FIELD_ORDER: AssetField[] = ["category", "name", "institution", "balance"];
+
 export function AssetForm({ defaults }: { defaults: AssetFormDefaults }) {
   const [state, formAction, pending] = useActionState<FormState<AssetField>, FormData>(
     saveAssetAction,
@@ -40,6 +42,8 @@ export function AssetForm({ defaults }: { defaults: AssetFormDefaults }) {
     if (state.formError) alertRef.current?.focus();
   }, [state]);
 
+  const errorList = FIELD_ORDER.filter((field) => errors[field]);
+
   return (
     <form action={formAction} onSubmit={onSubmit} noValidate className="space-y-6">
       {isNew ? null : <input type="hidden" name="id" value={defaults.id} />}
@@ -48,6 +52,17 @@ export function AssetForm({ defaults }: { defaults: AssetFormDefaults }) {
         <div ref={alertRef} tabIndex={-1} className="outline-none">
           <ErrorAlert id="asset-form-error">
             <p className="font-medium">{state.formError}</p>
+            {errorList.length > 0 ? (
+              <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+                {errorList.map((field) => (
+                  <li key={field}>
+                    <a href={`#${field}`} className="underline">
+                      {errors[field]}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </ErrorAlert>
         </div>
       ) : null}

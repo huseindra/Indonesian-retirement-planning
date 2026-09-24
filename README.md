@@ -5,14 +5,14 @@ help users understand whether their income, savings, pension assets (BPJS
 Ketenagakerjaan JHT, DPLK), living costs, inflation and future housing costs
 are enough to reach their retirement goals.
 
-**Current stage: 6 — AI Insights.** On top of the foundation, financial
-profile, living-cost projections, retirement simulation and scenario planning
-(Stages 1–5), an AI-assisted interpretation layer explains the plan's own
-numbers — funding gap, inflation sensitivity, delaying retirement, increasing
-savings, a planned property purchase, and differences between scenarios — and
-lets the user accept, edit, reject or dismiss each suggestion. The AI never
-computes financial results itself and never writes to the plan without an
-explicit, confirmed action from the user.
+**Current stage: 7 — Production Polish.** All seven stages are complete:
+foundation and auth, financial profile, living-cost projections, retirement
+simulation, scenario planning, AI Insights, and this final integration pass
+(cross-page navigation, state/accessibility audit, consistent Rupiah
+formatting, and richer demo data covering the whole journey). The complete
+user journey is Login → Dashboard → Financial Profile → Living Costs →
+Retirement Plan → Scenarios → AI Insights → Logout, and every page links
+forward to the next relevant one instead of relying on the sidebar alone.
 
 ## Getting started
 
@@ -33,10 +33,17 @@ The SQLite database is created automatically at `data/app.db` on first use,
 migrated, and seeded with the demo user. Set `DATABASE_PATH` to use another
 file (see `.env.example`). To start over, run `npm run db:reset`.
 
-AI Insights needs a provider. Without one configured, the rest of the app
-still works — the AI Insights page shows an "unavailable" state instead of
-failing. See [AI Insights module](#ai-insights-module) for the environment
-variables.
+The demo account (`demo` / `demo123`) is seeded with a complete Indonesian
+financial profile, seven asset accounts across every category, economic
+assumptions, a target property, four example scenarios and a starting set of
+AI Insights — so the full Login → … → AI Insights journey can be evaluated
+immediately, without creating a single record by hand.
+
+AI Insights needs a provider to *generate new* suggestions. Without one
+configured, the rest of the app still works, the demo account's seeded
+insights are still visible, and the AI Insights page shows an "unavailable"
+state instead of failing when you try to generate more. See
+[AI Insights module](#ai-insights-module) for the environment variables.
 
 ## Scripts
 
@@ -64,19 +71,26 @@ Tailwind CSS 4 and SQLite via `better-sqlite3`.
 src/
   app/
     login/                  Login page + client form (pending/error states)
-    (app)/                  Authenticated route group; layout validates the session
-      dashboard/            Dashboard page + loading skeleton
-      financial-profile/ …  Upcoming sections (placeholder pages)
-    actions/auth.ts         login / logout server actions
-  components/               Presentational UI (app shell, cards, placeholders)
-  config/                   Navigation and display labels
+    (app)/                  Authenticated route group; layout validates the session and renders the app shell
+      dashboard/            Overview: readiness, cash flow, assets, quick links, AI teaser
+      financial-profile/    Profile + assets CRUD (edit/, assets/new, assets/[id]/edit)
+      living-costs/         Assumptions + housing projection (assumptions/, property/)
+      retirement-plan/      The deterministic retirement simulation
+      scenarios/            What-if scenarios (new/, [id]/, [id]/edit)
+      ai-insights/          AI-interpreted suggestions, accept/edit/reject/dismiss/apply
+    actions/                One file per module; server actions parse FormData and call services
+  components/                Presentational UI: app shell, forms, charts, confirm dialogs, per-module widgets
+  config/                    Navigation and status-message → banner-text mappings
   lib/
-    db/                     Connection, migrations, seed data
-    repositories/           All SQL lives here; returns typed domain objects
-    services/               Use-case logic composed from repositories
-    auth/                   Password hashing, sessions, cookie helpers
-    domain/, format/        Pure helpers (age, Rupiah formatting)
-  middleware.ts             Redirects cookie-less requests to /login
+    db/                      Connection, migrations (schema_migrations), demo/e2e seed data
+    repositories/            All SQL lives here; returns typed domain objects, nothing else touches SQL
+    services/                Use-case logic composed from repositories; the only thing UI code calls
+    validation/              Server-side field validation, separate from services
+    projection/, scenarios/  Pure calculation engines (no database, UI or AI)
+    ai/                      Signals, context allowlist, provider interface + implementations, response validation
+    auth/                    Password hashing, sessions, cookie helpers
+    domain/, format/         Pure helpers (enums/labels, age, Rupiah formatting)
+  middleware.ts              Redirects cookie-less requests to /login
 ```
 
 Data flows one way: **UI → services → repositories → SQLite**. Components never
@@ -251,6 +265,53 @@ Credentials are checked against the `users` table. A successful login creates
 a random session token, stores its hash in `sessions` (7-day expiry) and sets
 it in an HTTP-only, SameSite=Lax cookie. Logout deletes the session row and
 the cookie.
+
+### Calculation & AI boundaries
+
+- **All financial math lives in `src/lib/projection/` and `src/lib/scenarios/`.**
+  The retirement engine, living-cost/housing projections and scenario
+  resolution are pure functions with no database, UI or AI involvement (see
+  [Living costs & projections](#living-costs--projections),
+  [Retirement simulation](#retirement-simulation) and
+  [Scenarios](#scenarios) above for the exact formulas). Nothing outside
+  these modules is allowed to reimplement or approximate them.
+- **The AI never calculates — it interprets.** `computeFinancialSignals()` is
+  the only bridge from the deterministic engine to the AI, and it only ever
+  *re-runs* `simulateRetirement()` with one input changed; the AI itself
+  receives already-computed numbers and narrates them. See
+  [AI Insights module](#ai-insights-module) for the full boundary (context
+  allowlist, response validation, the three-value action whitelist, and the
+  accept-then-apply write path).
+- **Nothing here is financial advice.** Every projection page states that
+  results are estimates from fixed assumptions, not guaranteed outcomes, and
+  every AI suggestion is visually distinguished from the deterministic
+  figures it cites. Confidence labels on AI suggestions describe how strongly
+  the *underlying numbers* support an observation, not a prediction about the
+  future.
+
+### Known limitations
+
+- **SQLite, single file.** Fine for a single-instance deployment or demo; not
+  built for concurrent writers across multiple server instances. On Vercel,
+  the database is ephemeral per cold start (see
+  [Deploying to Vercel](#deploying-to-vercel)).
+- **No password reset, email verification, or multi-factor auth.** Sessions
+  are cookie-based with a fixed 7-day expiry; there is no "remember me" or
+  session-revocation UI beyond logout.
+- **Single-currency, single-locale.** Amounts are always Indonesian Rupiah
+  formatted with `Intl.NumberFormat("id-ID", …)`; there is no multi-currency
+  or multi-language support.
+- **The retirement engine is intentionally simplified.** It does not model
+  BPJS Jaminan Pensiun's monthly annuity, taxes, fees, or year-to-year
+  variance in returns/inflation — see "Not included" on the Retirement Plan
+  page for the full, user-visible list.
+- **The real AI provider (`ANTHROPIC_API_KEY`) requires network access** and
+  is subject to the usual LLM caveats (latency, occasional malformed output —
+  mitigated by `validateAiResponse()`, but not eliminated). The mock provider
+  is deterministic and recommended for demos, CI and offline development.
+- **No automated accessibility test run** (e.g. axe-core) is wired into CI;
+  accessibility was reviewed manually (labels, focus management, semantic
+  structure, contrast) rather than verified by an automated audit.
 
 ## Development workflow
 

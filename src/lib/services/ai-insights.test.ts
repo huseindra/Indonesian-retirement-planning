@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openDatabase, type Database } from "../db/client";
 import { DEMO_USERNAME } from "../db/seed";
-import { insertInsights, listInsightsByUserId } from "../repositories/ai-insights";
+import { deleteInsightsByUserId, insertInsights, listInsightsByUserId } from "../repositories/ai-insights";
 import { findUserByUsername } from "../repositories/users";
 import { deleteFinancialData } from "./financial-profile";
 import { listScenariosByUserId } from "../repositories/scenarios";
@@ -39,6 +39,10 @@ describe("ai insights service", () => {
     );
     delete process.env.AI_PROVIDER;
     delete process.env.ANTHROPIC_API_KEY;
+    // The demo user is now seeded with a starting set of insights (so the
+    // full journey works without a live AI call); these tests want a clean
+    // slate to reason about, independent of what seeding happens to insert.
+    deleteInsightsByUserId(demoId, db);
   });
 
   afterEach(() => {

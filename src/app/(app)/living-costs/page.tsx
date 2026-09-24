@@ -73,6 +73,34 @@ export default async function LivingCostsPage({ searchParams }: { searchParams: 
 
         <HousingSection overview={overview} />
 
+        <section
+          aria-labelledby="living-costs-next-title"
+          className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-6"
+        >
+          <div>
+            <h2 id="living-costs-next-title" className="text-base font-semibold">
+              See what this means for retirement
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              These costs and assumptions feed directly into your Retirement Plan and any scenarios you compare.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <Link
+              href="/retirement-plan"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+            >
+              Retirement Plan →
+            </Link>
+            <Link
+              href="/scenarios"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+            >
+              Compare scenarios →
+            </Link>
+          </div>
+        </section>
+
         <p className="text-xs text-muted">
           All figures are calculated with fixed compound-growth formulas from the assumptions above — they
           are illustrations, not forecasts or financial advice.

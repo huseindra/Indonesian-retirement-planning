@@ -1,6 +1,11 @@
+import { randomUUID } from "node:crypto";
 import type { Database } from "better-sqlite3";
 import { hashPassword } from "../auth/password";
+import { buildAiContext } from "../ai/context";
+import { computeMockInsights } from "../ai/mock-provider";
+import { computeFinancialSignals } from "../ai/signals";
 import type { AssetAccountInput } from "../repositories/asset-accounts";
+import { insertInsightEvent, insertInsights } from "../repositories/ai-insights";
 import type { FinancialProfileInput } from "../repositories/financial-profiles";
 import type { TargetPropertyInput } from "../repositories/target-properties";
 import { DEFAULT_ASSUMPTIONS, DEFAULT_PLAN_UNTIL_AGE } from "../domain/assumptions";
@@ -60,6 +65,32 @@ function userExists(db: Database, username: string): boolean {
 }
 
 /**
+ * Seeds a starting set of AI Insights for the demo user, using the exact
+ * same deterministic signals and template-based narration a live "Generate"
+ * click would produce (no network call). This lets the demo account show
+ * the full Login → … → AI Insights journey immediately, without requiring
+ * an ANTHROPIC_API_KEY or a manual click, while still going through the
+ * same signal-computation and content-shaping code the real feature uses.
+ */
+function seedDemoInsights(userId: number, db: Database): void {
+  const signals = computeFinancialSignals(userId, db);
+  if (signals.status !== "ready") return;
+
+  const insights = computeMockInsights(buildAiContext(signals));
+  if (insights.length === 0) return;
+
+  const batchId = randomUUID();
+  const ids = insertInsights(
+    userId,
+    insights.map((insight) => ({ ...insight, batchId, provider: "mock", model: null })),
+    db,
+  );
+  for (const id of ids) {
+    insertInsightEvent(userId, id, "generated", { provider: "mock", model: null }, db);
+  }
+}
+
+/**
  * Seeds the demo user with a financial profile, asset accounts, economic
  * assumptions, a target property, retirement settings and example scenarios. Skipped
  * when the demo user already exists, so it never overwrites data the user
@@ -100,6 +131,8 @@ export function seedDemoData(db: Database): void {
       );
 
       for (const scenario of [...EXAMPLE_SCENARIOS, DEMO_PROPERTY_SCENARIO]) insertScenario(userId, scenario, db);
+
+      seedDemoInsights(userId, db);
     }
 
     if (process.env.SEED_E2E_USERS === "1") {

@@ -4,28 +4,21 @@ export interface NavItem {
   href: string;
   label: string;
   icon: IconName;
-  /** "upcoming" sections are shown in navigation but not yet built. */
-  status: "available" | "upcoming";
   description: string;
 }
 
-/**
- * Single source of truth for the app's sections. Later stages flip a
- * section to "available" and replace its placeholder page.
- */
+/** Single source of truth for the app's sections, in journey order. */
 export const NAV_ITEMS: NavItem[] = [
   {
     href: "/dashboard",
     label: "Dashboard",
     icon: "dashboard",
-    status: "available",
     description: "An overview of your retirement readiness.",
   },
   {
     href: "/financial-profile",
     label: "Financial Profile",
     icon: "wallet",
-    status: "available",
     description:
       "Record your income, savings, investments and pension assets such as BPJS JHT and DPLK.",
   },
@@ -33,7 +26,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/living-costs",
     label: "Living Costs",
     icon: "home",
-    status: "available",
     description:
       "Estimate today's living and housing costs and how inflation will change them by retirement.",
   },
@@ -41,7 +33,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/retirement-plan",
     label: "Retirement Plan",
     icon: "target",
-    status: "available",
     description:
       "Project your retirement fund year by year and see whether it covers your retirement goal.",
   },
@@ -49,7 +40,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/scenarios",
     label: "Scenarios",
     icon: "branches",
-    status: "available",
     description:
       "Compare what-if scenarios such as retiring earlier, saving more or buying a home.",
   },
@@ -57,7 +47,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/ai-insights",
     label: "AI Insights",
     icon: "sparkle",
-    status: "available",
     description:
       "AI-interpreted observations about your plan, with sources you can check and nothing applied without your say-so.",
   },

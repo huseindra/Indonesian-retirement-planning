@@ -45,7 +45,7 @@ export function Banner({
   return (
     <p
       role="status"
-      data-testid="success-message"
+      data-testid={tone === "success" ? "success-message" : "status-message"}
       className={`flex items-start gap-2 rounded-lg border px-3.5 py-3 text-sm ${BANNER_STYLES[tone]}`}
     >
       <Icon name={BANNER_ICON[tone]} className="mt-0.5 size-4 shrink-0" />

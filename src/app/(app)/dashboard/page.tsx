@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Icon } from "@/components/icons";
+import { Icon, type IconName } from "@/components/icons";
 import { PageHeader } from "@/components/page-header";
 import { ReadinessSummary, RetirementChart } from "@/components/retirement/readiness";
 import { SummaryCard } from "@/components/summary-card";
@@ -102,8 +102,35 @@ export default async function DashboardPage() {
       </div>
 
       {profile ? <AssetGroupsPanel savings={savings} /> : null}
+      {profile ? <QuickLinksPanel /> : null}
       {profile ? <AiInsightsTeaser userId={user.id} /> : null}
     </>
+  );
+}
+
+function QuickLinksPanel() {
+  const links: { href: string; icon: IconName; title: string; description: string }[] = [
+    { href: "/living-costs", icon: "home", title: "Living Costs", description: "Inflation and your target home's future price" },
+    { href: "/scenarios", icon: "branches", title: "Scenarios", description: "Compare what-if assumptions side by side" },
+  ];
+  return (
+    <section aria-label="More to explore" className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-5 shadow-xs hover:bg-canvas"
+        >
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
+            <Icon name={link.icon} className="size-5" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold">{link.title} →</p>
+            <p className="mt-0.5 text-xs text-muted">{link.description}</p>
+          </div>
+        </Link>
+      ))}
+    </section>
   );
 }
 

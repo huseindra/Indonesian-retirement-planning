@@ -39,6 +39,19 @@ export interface BaselineHints {
   housingGrowth: string;
 }
 
+const FIELD_ORDER: ScenarioField[] = [
+  "name",
+  "description",
+  "retirementAge",
+  "monthlySpending",
+  "inflationBps",
+  "investmentReturnBps",
+  "retirementYears",
+  "propertyPrice",
+  "propertyPurchaseAge",
+  "propertyGrowthBps",
+];
+
 export function ScenarioForm({ defaults, baseline }: { defaults: ScenarioFormDefaults; baseline: BaselineHints }) {
   const [state, formAction, pending] = useActionState<FormState<ScenarioField>, FormData>(saveScenarioAction, {
     errors: {},
@@ -57,6 +70,7 @@ export function ScenarioForm({ defaults, baseline }: { defaults: ScenarioFormDef
   }, [state]);
 
   const planHint = (value: string) => `Leave blank to use your plan: ${value}.`;
+  const errorList = FIELD_ORDER.filter((field) => errors[field]);
 
   return (
     <form action={formAction} onSubmit={onSubmit} noValidate className="space-y-6">
@@ -66,6 +80,17 @@ export function ScenarioForm({ defaults, baseline }: { defaults: ScenarioFormDef
         <div ref={alertRef} tabIndex={-1} className="outline-none">
           <ErrorAlert id="scenario-form-error">
             <p className="font-medium">{state.formError}</p>
+            {errorList.length > 0 ? (
+              <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+                {errorList.map((field) => (
+                  <li key={field}>
+                    <a href={`#${field}`} className="underline">
+                      {errors[field]}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </ErrorAlert>
         </div>
       ) : null}

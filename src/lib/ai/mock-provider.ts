@@ -1,5 +1,5 @@
 import type { AiInsightContent, ConfidenceLabel } from "../domain/ai-insights";
-import { formatRupiah } from "../format/currency";
+import { formatPercent, formatRupiah } from "../format/currency";
 import { formatRate } from "../projection/compound";
 import type { AiContext } from "./context";
 import type { AiInsightProvider, GenerationOutcome } from "./provider";
@@ -30,8 +30,8 @@ function insightFor(signal: FinancialSignal): AiInsightContent | null {
         ? {
             kind: "funding_gap",
             observation: `Your plan is projected to fall short by ${formatRupiah(Math.abs(signal.gap))} at retirement.`,
-            reasoning: `Projected assets of ${formatRupiah(signal.retirementAssets)} cover ${(signal.fundedRatio * 100).toFixed(1)}% of the ${formatRupiah(signal.requiredFund)} required to fund your living costs to age ${signal.planUntilAge}.${signal.fundsRunOutAtAge !== null ? ` At the current trajectory, funds are projected to run out at age ${signal.fundsRunOutAtAge}.` : ""}`,
-            citedValues: [formatRupiah(signal.gap), `${(signal.fundedRatio * 100).toFixed(1)}% funded`],
+            reasoning: `Projected assets of ${formatRupiah(signal.retirementAssets)} cover ${formatPercent(signal.fundedRatio)} of the ${formatRupiah(signal.requiredFund)} required to fund your living costs to age ${signal.planUntilAge}.${signal.fundsRunOutAtAge !== null ? ` At the current trajectory, funds are projected to run out at age ${signal.fundsRunOutAtAge}.` : ""}`,
+            citedValues: [formatRupiah(signal.gap), `${formatPercent(signal.fundedRatio)} funded`],
             confidence: magnitudeConfidence(1 - signal.fundedRatio),
             actionType: "none",
             actionLabel: "Review the Retirement Plan page for the full breakdown",
@@ -141,11 +141,15 @@ function insightFor(signal: FinancialSignal): AiInsightContent | null {
   }
 }
 
+/** The synchronous core of the mock provider, reused by the seed script to give demo users a starting set of insights without a live AI call. */
+export function computeMockInsights(context: AiContext): AiInsightContent[] {
+  return context.signals.map(insightFor).filter((i): i is AiInsightContent => i !== null);
+}
+
 export class MockInsightProvider implements AiInsightProvider {
   readonly name = "mock";
 
   async generate(context: AiContext): Promise<GenerationOutcome> {
-    const insights = context.signals.map(insightFor).filter((i): i is AiInsightContent => i !== null);
-    return { status: "ready", insights, provider: this.name, model: null };
+    return { status: "ready", insights: computeMockInsights(context), provider: this.name, model: null };
   }
 }

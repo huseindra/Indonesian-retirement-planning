@@ -298,6 +298,31 @@ function Ready({ plan }: { plan: Extract<RetirementPlanView, { status: "ready" }
         <RetirementChart result={r} />
       </section>
 
+      <section aria-labelledby="next-steps-title" className={`${card} flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6`}>
+        <div>
+          <h2 id="next-steps-title" className="text-base font-semibold">
+            See how this could change
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Compare what-if scenarios, or let AI Insights point out what stands out in this plan.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link
+            href="/scenarios"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+          >
+            Compare scenarios →
+          </Link>
+          <Link
+            href="/ai-insights"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold hover:bg-canvas"
+          >
+            AI Insights →
+          </Link>
+        </div>
+      </section>
+
       <CalculationDetails result={r} />
     </div>
   );

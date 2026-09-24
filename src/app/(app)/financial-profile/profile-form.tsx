@@ -75,7 +75,7 @@ export function ProfileForm({ defaults, isNew }: { defaults: ProfileFormDefaults
               <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
                 {errorList.map((field) => (
                   <li key={field}>
-                    <a href={`#${field === "housingStatus" ? "housingStatus-own" : field}`} className="underline">
+                    <a href={`#${field === "housingStatus" ? "housingStatus-error" : field}`} className="underline">
                       {errors[field]}
                     </a>
                   </li>
