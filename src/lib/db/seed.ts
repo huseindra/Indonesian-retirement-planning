@@ -3,7 +3,7 @@ import { hashPassword } from "../auth/password";
 import type { AssetAccountInput } from "../repositories/asset-accounts";
 import type { FinancialProfileInput } from "../repositories/financial-profiles";
 import type { TargetPropertyInput } from "../repositories/target-properties";
-import { DEFAULT_ASSUMPTIONS } from "../domain/assumptions";
+import { DEFAULT_ASSUMPTIONS, DEFAULT_PLAN_UNTIL_AGE } from "../domain/assumptions";
 
 export const DEMO_USERNAME = "demo";
 export const DEMO_PASSWORD = "demo123";
@@ -59,7 +59,7 @@ function userExists(db: Database, username: string): boolean {
 
 /**
  * Seeds the demo user with a financial profile, asset accounts, economic
- * assumptions and a target property. Skipped
+ * assumptions, a target property and retirement settings. Skipped
  * when the demo user already exists, so it never overwrites data the user
  * has changed.
  */
@@ -91,6 +91,11 @@ export function seedDemoData(db: Database): void {
         `INSERT INTO target_properties (user_id, name, current_price, purchase_age, growth_bps)
          VALUES (@userId, @name, @currentPrice, @purchaseAge, @growthBps)`,
       ).run({ userId, ...DEMO_TARGET_PROPERTY });
+
+      db.prepare("INSERT INTO retirement_settings (user_id, plan_until_age) VALUES (?, ?)").run(
+        userId,
+        DEFAULT_PLAN_UNTIL_AGE,
+      );
     }
 
     if (process.env.SEED_E2E_USERS === "1") {

@@ -161,6 +161,20 @@ export const migrations: Migration[] = [
       );
     `,
   },
+  {
+    id: 4,
+    name: "retirement_plan_module",
+    // Life-expectancy / planning-horizon assumption for the retirement
+    // simulation. No row = the application default (plan until age 85).
+    up: `
+      CREATE TABLE retirement_settings (
+        user_id        INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        plan_until_age INTEGER NOT NULL CHECK (plan_until_age BETWEEN 50 AND 120),
+        created_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        updated_at     TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+      );
+    `,
+  },
 ];
 
 export function runMigrations(db: Database, pending: Migration[] = migrations): void {

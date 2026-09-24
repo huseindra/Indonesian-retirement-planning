@@ -76,13 +76,14 @@ export default async function DashboardPage() {
         <SummaryCard
           label="Estimated Retirement Fund"
           icon="target"
-          placeholder
+          placeholder={summary.retirement.status !== "ready"}
+          placeholderLabel="Not set"
           value={
-            summary.estimatedRetirementFund === null
-              ? "Not yet calculated"
-              : formatRupiah(summary.estimatedRetirementFund)
+            summary.retirement.status === "ready"
+              ? formatRupiah(summary.retirement.result.projectedAssets.total)
+              : "Not yet calculated"
           }
-          detail="Available once your Retirement Plan is set up."
+          detail="Projected value of your assets at retirement."
         />
       </section>
 

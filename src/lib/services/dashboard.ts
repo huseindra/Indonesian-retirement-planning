@@ -1,6 +1,7 @@
 import { getDb, type Database } from "../db/client";
 import type { HousingStatus } from "../domain/financial-profile";
 import { getFinancialOverview, type AssetGroupSummary } from "./financial-profile";
+import { getRetirementPlan, type RetirementPlanView } from "./retirement-plan";
 
 export interface DashboardSummary {
   /** Null until the user has completed their financial profile. */
@@ -22,16 +23,14 @@ export interface DashboardSummary {
     accountCount: number;
     groups: AssetGroupSummary[];
   };
-  /**
-   * Not calculated until the retirement simulation exists. Kept in the
-   * summary shape so the UI does not change when it is implemented.
-   */
-  estimatedRetirementFund: number | null;
+  /** Retirement readiness from the shared simulation engine. */
+  retirement: RetirementPlanView;
 }
 
 /**
  * Assembles everything the dashboard shows for a user from their persisted
- * financial profile. This is plain aggregation — no projections.
+ * financial profile, plus the retirement simulation from the same service
+ * the Retirement Plan page uses (no formulas are duplicated here).
  */
 export function getDashboardSummary(userId: number, db: Database = getDb()): DashboardSummary {
   const overview = getFinancialOverview(userId, db);
@@ -56,6 +55,6 @@ export function getDashboardSummary(userId: number, db: Database = getDb()): Das
       accountCount: overview.accountCount,
       groups: overview.groups,
     },
-    estimatedRetirementFund: null,
+    retirement: getRetirementPlan(userId, db),
   };
 }

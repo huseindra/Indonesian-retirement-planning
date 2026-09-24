@@ -52,3 +52,12 @@ export const PROPERTY_LIMITS = {
   maxNameLength: 80,
   maxPurchaseAge: 100,
 } as const;
+
+/**
+ * Default age the retirement money should last until. Indonesia's average
+ * life expectancy is in the low 70s, but a plan should cover people who
+ * live longer than average, so the default horizon is deliberately longer.
+ */
+export const DEFAULT_PLAN_UNTIL_AGE = 85;
+
+export const PLAN_UNTIL_LIMITS = { min: 50, max: 120 } as const;

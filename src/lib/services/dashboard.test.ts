@@ -54,8 +54,13 @@ describe("getDashboardSummary", () => {
     });
   });
 
-  it("leaves the estimated retirement fund uncalculated", () => {
-    expect(getDashboardSummary(userId, db).estimatedRetirementFund).toBeNull();
+  it("includes retirement readiness from the simulation engine", () => {
+    const { retirement } = getDashboardSummary(userId, db);
+    expect(retirement.status).toBe("ready");
+    if (retirement.status !== "ready") return;
+    expect(retirement.result.requiredFund).toBe(4_070_546_103);
+    expect(retirement.result.projectedAssets.total).toBe(2_877_738_653);
+    expect(retirement.result.gap).toBe(-1_192_807_450);
   });
 
   it("returns an empty summary once the profile is deleted", () => {
@@ -63,5 +68,6 @@ describe("getDashboardSummary", () => {
     const summary = getDashboardSummary(userId, db);
     expect(summary.profile).toBeNull();
     expect(summary.savings).toMatchObject({ currentSavings: 0, pensionAssets: 0, accountCount: 0 });
+    expect(summary.retirement.status).toBe("incomplete");
   });
 });
