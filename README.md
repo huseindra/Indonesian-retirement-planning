@@ -5,9 +5,14 @@ help users understand whether their income, savings, pension assets (BPJS
 Ketenagakerjaan JHT, DPLK), living costs, inflation and future housing costs
 are enough to reach their retirement goals.
 
-**Current stage: 1 — Foundation.** Login, a persistent SQLite database with
-seeded demo data, and a responsive dashboard shell. Retirement calculations,
-projections, scenarios and AI features come in later stages.
+**Current stage: 2 — Financial Profile.** On top of the Stage 1 foundation
+(login, SQLite persistence, responsive dashboard), users can create, view, edit
+and delete their financial profile: age and target retirement age, monthly
+income and living expenses, housing (own / rent / family-owned), and asset
+records grouped as cash & savings, investments, JHT (BPJS Ketenagakerjaan) and
+other pension funds. The dashboard reads this persisted data and guides users
+to complete their profile when none exists. Retirement projections, scenarios
+and AI features come in later stages.
 
 ## Getting started
 
@@ -38,7 +43,7 @@ file (see `.env.example`). To start over, run `npm run db:reset`.
 | `npm run lint`      | ESLint                                              |
 | `npm run typecheck` | TypeScript type check                               |
 | `npm test`          | Unit tests (Vitest)                                 |
-| `npm run test:e2e`  | Browser tests (Playwright, desktop + mobile)        |
+| `npm run test:e2e`  | Browser tests (Playwright, desktop + mobile); uses a fresh `data/e2e.db` |
 | `npm run db:reset`  | Delete and re-seed the local database               |
 
 For end-to-end tests with a preinstalled Chromium, set
@@ -79,12 +84,30 @@ without changing the UI architecture.
 | -------------------- | -------------------------------------------------------- |
 | `users`              | Accounts; scrypt-hashed passwords                        |
 | `sessions`           | Login sessions keyed by a SHA-256 hash of the cookie token |
-| `financial_profiles` | Date of birth, target retirement age, city, monthly income/expenses |
-| `asset_accounts`     | Savings, deposits, investments and pension balances      |
+| `financial_profiles` | One per user: current and target retirement age, monthly income, living expenses (excl. rent), housing status, property value (own) or monthly rent (rent), optional city |
+| `asset_accounts`     | Asset records: `cash`, `deposit` (cash & savings); `mutual_fund`, `stock`, `bond`, `other` (investments); `bpjs_jht` (JHT); `pension` (other pension funds) |
 | `schema_migrations`  | Applied migration ids                                    |
 
 Money is stored as integer Rupiah. Schema changes are added as new entries in
 `src/lib/db/migrations.ts`; never edit a migration that has been merged.
+CHECK constraints mirror the validation rules (e.g. target age > current age,
+rent only when renting). Migration 2 upgrades Stage 1 databases in place:
+age is derived from the stored date of birth, housing starts as
+family-owned, and BPJS JHT records move to the `bpjs_jht` category.
+
+### Financial profile module
+
+| Route                                   | Purpose                                   |
+| --------------------------------------- | ----------------------------------------- |
+| `/financial-profile`                    | View profile and assets; delete records   |
+| `/financial-profile/edit`               | Create or edit the profile                |
+| `/financial-profile/assets/new`         | Add an asset (`?group=` pre-selects type) |
+| `/financial-profile/assets/[id]/edit`   | Edit or delete an asset                   |
+
+Validation lives in `src/lib/validation/financial-profile.ts` and runs on the
+server for every save; server actions return field errors with the submitted
+values. Services in `src/lib/services/financial-profile.ts` scope every read
+and write to the signed-in user.
 
 ### Authentication
 
