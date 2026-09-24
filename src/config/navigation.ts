@@ -54,9 +54,3 @@ export const NAV_ITEMS: NavItem[] = [
       "Compare what-if scenarios such as retiring earlier, saving more or buying a home.",
   },
 ];
-
-export function getNavItem(href: string): NavItem {
-  const item = NAV_ITEMS.find((i) => i.href === href);
-  if (!item) throw new Error(`Unknown navigation item: ${href}`);
-  return item;
-}

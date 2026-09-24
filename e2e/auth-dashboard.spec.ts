@@ -70,12 +70,13 @@ test("demo user can sign in, see the dashboard and sign out", async ({ page, isM
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("upcoming sections show a placeholder", async ({ page }) => {
+test("signing in returns the user to the section they asked for", async ({ page }) => {
+  // Every section is built as of Stage 5, so the old placeholder check now
+  // verifies the post-login redirect to a real page.
   await page.goto("/login?next=%2Fscenarios");
   await signIn(page);
   await expect(page).toHaveURL(/\/scenarios$/);
-  await expect(page.getByRole("heading", { name: "Scenarios", level: 1 })).toBeVisible();
-  await expect(page.getByText("This section is on its way")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Compare what-if scenarios", level: 1 })).toBeVisible();
 });
 
 test("an already signed-in user visiting /login goes to the dashboard", async ({ page }) => {
